@@ -14,5 +14,5 @@ export const colors = {
 
 export const spacing = {
   page: 20,
-  navHeight: 64,
+  navHeight: 54,
 };
