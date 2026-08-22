@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../src/contexts/AuthContext';
 import { colors } from '../../src/theme';
 import { fonts } from '../../src/typography';
 
@@ -22,39 +23,31 @@ const tabListeners = {
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { hydrated, signedIn, onboarded } = useAuth();
   const tabHeight = 54 + Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 4);
+
+  if (!hydrated) return null;
+  if (!signedIn) return <Redirect href="/login" />;
+  if (!onboarded) return <Redirect href="/onboarding" />;
 
   return (
     <Tabs
       screenOptions={({ route }) => {
         const dark = route.name === 'reels';
         const pair = iconNames[route.name as keyof typeof iconNames] ?? iconNames.index;
-
         return {
           headerShown: false,
           animation: 'shift',
           lazy: false,
           freezeOnBlur: false,
           tabBarHideOnKeyboard: true,
-          sceneStyle: {
-            backgroundColor: dark ? colors.black : colors.bg,
-          },
+          sceneStyle: { backgroundColor: dark ? colors.black : colors.bg },
           tabBarActiveTintColor: colors.teal,
           tabBarInactiveTintColor: dark ? '#A6ADB0' : '#111111',
-          tabBarLabelStyle: {
-            fontFamily: fonts.semibold,
-            fontSize: 11,
-            marginTop: 1,
-          },
-          tabBarIconStyle: {
-            marginTop: 3,
-          },
+          tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 11, marginTop: 1 },
+          tabBarIconStyle: { marginTop: 3 },
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={pair[focused ? 1 : 0]}
-              color={color}
-              size={focused ? 26 : 25}
-            />
+            <Ionicons name={pair[focused ? 1 : 0]} color={color} size={focused ? 26 : 25} />
           ),
           tabBarStyle: {
             position: 'absolute',

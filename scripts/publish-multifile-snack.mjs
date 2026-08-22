@@ -5,18 +5,29 @@ import { Snack } from 'snack-sdk';
 const root = process.env.GITHUB_WORKSPACE || process.cwd();
 
 const projectFiles = [
+  'app/index.tsx',
+  'app/login.tsx',
+  'app/onboarding.tsx',
+  'app/practice-session.tsx',
   'app/_layout.tsx',
   'app/(tabs)/_layout.tsx',
   'app/(tabs)/index.tsx',
   'app/(tabs)/reels.tsx',
   'app/(tabs)/coach.tsx',
   'app/(tabs)/progress.tsx',
+  'src/components/CardVideo.tsx',
+  'src/components/Stat.tsx',
+  'src/contexts/AuthContext.tsx',
   'src/contexts/ZagadajSessionContext.tsx',
+  'src/domain/challenges.ts',
+  'src/domain/practiceSession.ts',
+  'src/screens/LoginScreen.tsx',
+  'src/screens/OnboardingScreen.tsx',
+  'src/screens/PracticeSessionScreen.tsx',
   'src/screens/TodayScreen.tsx',
   'src/screens/ReelsScreen.tsx',
   'src/screens/CoachScreen.tsx',
   'src/screens/ProgressScreen.tsx',
-  'src/components/Stat.tsx',
   'src/theme.ts',
   'src/typography.ts',
 ];
@@ -36,17 +47,19 @@ for (const file of projectFiles) {
 }
 
 const snack = new Snack({
-  name: 'Zagadaj — Expo Router',
-  description: 'Wieloplikowy prototyp Zagadaj: Expo Router, tabs, safe area i pionowe rolki.',
+  name: 'Zagadaj — product flow',
+  description: 'Expo Router SDK 54: login, onboarding, functional tabs, timer questions, CardVideo, Coach and progress.',
   sdkVersion: '54.0.0',
   files,
   dependencies: {
     '@expo/vector-icons': { version: '^15.0.3' },
     '@react-native-async-storage/async-storage': { version: '2.2.0' },
     'expo-haptics': { version: '~15.0.8' },
+    'expo-image': { version: '~3.0.11' },
     'expo-router': { version: '~6.0.24' },
     'expo-splash-screen': { version: '~31.0.13' },
     'expo-status-bar': { version: '~3.0.9' },
+    'expo-video': { version: '~3.0.16' },
     'react-native-safe-area-context': { version: '~5.6.0' },
     'react-native-screens': { version: '~4.16.0' },
   },

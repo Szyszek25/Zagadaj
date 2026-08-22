@@ -12,7 +12,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,10 +20,12 @@ jobs:
           node-version: 22.13.1
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Unit tests
+        run: npm test
       - name: TypeScript
-        run: npx tsc --noEmit
+        run: npm run typecheck
       - name: Expo doctor
-        run: npx expo-doctor
+        run: npm run doctor
       - name: Publish multi-file Snack
         run: npm run snack:publish
       - name: Attach Snack URL to commit
@@ -40,6 +42,6 @@ jobs:
               sha: context.sha,
               state: 'success',
               context: 'Expo Snack',
-              description: 'Open multi-file Expo Snack',
+              description: 'Open tested multi-file Expo Snack',
               target_url: editor,
             });

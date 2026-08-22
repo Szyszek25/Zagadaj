@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { ChallengeScope } from '../domain/challenges';
 
 const STORAGE_KEY = 'zagadaj:session:v1';
 const HYDRATION_TIMEOUT_MS = 800;
@@ -9,12 +10,22 @@ type PersistedSession = {
   xp: number;
   streak: number;
   challengeStarted: boolean;
+  completedSessions: number;
+  totalPracticeSeconds: number;
+  lastPracticeScope: ChallengeScope | null;
+};
+
+export type PracticeCompletion = {
+  scope: ChallengeScope;
+  secondsSpent: number;
+  questionsSeen: number;
 };
 
 type ZagadajSession = PersistedSession & {
   hydrated: boolean;
   startChallenge: () => void;
   resetChallenge: () => void;
+  finishPractice: (completion: PracticeCompletion) => void;
 };
 
 const ZagadajSessionContext = createContext<ZagadajSession | null>(null);
@@ -23,6 +34,9 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
   const [xp, setXp] = useState(620);
   const [streak, setStreak] = useState(7);
   const [challengeStarted, setChallengeStarted] = useState(false);
+  const [completedSessions, setCompletedSessions] = useState(0);
+  const [totalPracticeSeconds, setTotalPracticeSeconds] = useState(0);
+  const [lastPracticeScope, setLastPracticeScope] = useState<ChallengeScope | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const didHydrateRef = useRef(false);
 
@@ -45,8 +59,11 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
         const parsed = JSON.parse(raw) as Partial<PersistedSession>;
         if (typeof parsed.xp === 'number') setXp(parsed.xp);
         if (typeof parsed.streak === 'number') setStreak(parsed.streak);
-        if (typeof parsed.challengeStarted === 'boolean') {
-          setChallengeStarted(parsed.challengeStarted);
+        if (typeof parsed.challengeStarted === 'boolean') setChallengeStarted(parsed.challengeStarted);
+        if (typeof parsed.completedSessions === 'number') setCompletedSessions(parsed.completedSessions);
+        if (typeof parsed.totalPracticeSeconds === 'number') setTotalPracticeSeconds(parsed.totalPracticeSeconds);
+        if (parsed.lastPracticeScope === 'today' || parsed.lastPracticeScope === 'campus' || parsed.lastPracticeScope === 'city') {
+          setLastPracticeScope(parsed.lastPracticeScope);
         }
       })
       .catch(() => {})
@@ -63,9 +80,16 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (!didHydrateRef.current) return;
-    const snapshot: PersistedSession = { xp, streak, challengeStarted };
+    const snapshot: PersistedSession = {
+      xp,
+      streak,
+      challengeStarted,
+      completedSessions,
+      totalPracticeSeconds,
+      lastPracticeScope,
+    };
     void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)).catch(() => {});
-  }, [challengeStarted, streak, xp]);
+  }, [challengeStarted, completedSessions, lastPracticeScope, streak, totalPracticeSeconds, xp]);
 
   const startChallenge = useCallback(() => {
     setChallengeStarted((current) => {
@@ -74,6 +98,16 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       return true;
     });
+  }, []);
+
+  const finishPractice = useCallback((completion: PracticeCompletion) => {
+    const safeSeconds = Math.max(0, Math.round(completion.secondsSpent));
+    const reward = safeSeconds >= 240 ? 30 : safeSeconds >= 60 ? 15 : 5;
+    setXp((value) => value + reward);
+    setCompletedSessions((value) => value + 1);
+    setTotalPracticeSeconds((value) => value + safeSeconds);
+    setLastPracticeScope(completion.scope);
+    setChallengeStarted(true);
   }, []);
 
   const resetChallenge = useCallback(() => {
@@ -86,11 +120,15 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
       xp,
       streak,
       challengeStarted,
+      completedSessions,
+      totalPracticeSeconds,
+      lastPracticeScope,
       hydrated,
       startChallenge,
       resetChallenge,
+      finishPractice,
     }),
-    [challengeStarted, hydrated, resetChallenge, startChallenge, streak, xp],
+    [challengeStarted, completedSessions, finishPractice, hydrated, lastPracticeScope, resetChallenge, startChallenge, streak, totalPracticeSeconds, xp],
   );
 
   return <ZagadajSessionContext.Provider value={value}>{children}</ZagadajSessionContext.Provider>;

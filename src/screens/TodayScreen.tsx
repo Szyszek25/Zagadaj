@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stat } from '../components/Stat';
+import { challengeScopes, getChallenge, type ChallengeScope } from '../domain/challenges';
 import { colors, spacing } from '../theme';
 import { fonts } from '../typography';
 
@@ -9,28 +10,25 @@ type Props = {
   xp: number;
   streak: number;
   started: boolean;
-  onStart: () => void;
+  scope: ChallengeScope;
+  onScopeChange: (scope: ChallengeScope) => void;
+  onStart: (scope: ChallengeScope) => void;
 };
 
-const variants = [
-  'Hej, totalnie znikąd, ale masz bardzo dobrą energię.',
-  'Hej, szybkie pytanie — często tu wpadasz?',
-  'Hej, wyglądasz jak ktoś, kto zna tu dobre miejsca. Co polecasz?',
-];
-
-export function TodayScreen({ xp, streak, started, onStart }: Props) {
-  const [variant, setVariant] = useState(0);
+export function TodayScreen({ xp, streak, started, scope, onScopeChange, onStart }: Props) {
+  const [easier, setEasier] = useState(false);
   const openerMotion = useRef(new Animated.Value(1)).current;
+  const challenge = getChallenge(scope);
 
-  const changeVariant = (next: number) => {
+  const animateCopyChange = (change: () => void) => {
     void Haptics.selectionAsync().catch(() => {});
     Animated.timing(openerMotion, {
       toValue: 0,
-      duration: 110,
+      duration: 100,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start(() => {
-      setVariant(next);
+      change();
       openerMotion.setValue(0);
       Animated.timing(openerMotion, {
         toValue: 1,
@@ -41,7 +39,13 @@ export function TodayScreen({ xp, streak, started, onStart }: Props) {
     });
   };
 
-  const easier = () => changeVariant((variant + 1) % variants.length);
+  const changeScope = (next: ChallengeScope) => {
+    if (next === scope) return;
+    animateCopyChange(() => {
+      setEasier(false);
+      onScopeChange(next);
+    });
+  };
 
   return (
     <ScrollView
@@ -51,83 +55,73 @@ export function TodayScreen({ xp, streak, started, onStart }: Props) {
       contentInsetAdjustmentBehavior="never"
     >
       <View style={styles.header}>
-        <View style={styles.brandRow} accessibilityRole="header">
+        <View style={styles.brandRow}>
           <Text style={styles.brand}>Zagadaj</Text>
           <View style={styles.brandDot} />
         </View>
-        <View style={styles.stats} accessibilityLabel={`${streak} dni serii, ${xp} punktów`}>
+        <View style={styles.stats}>
           <Stat value={`${streak} dni`} label="seria" />
           <Stat value={`${xp}`} label="punkty" />
         </View>
       </View>
 
       <View style={styles.tabs} accessibilityRole="tablist">
-        <View>
-          <Text style={[styles.tab, styles.tabActive]} accessibilityRole="tab" accessibilityState={{ selected: true }}>Dziś</Text>
-          <View style={styles.tabLine} />
-        </View>
-        <Text style={styles.tab} accessibilityRole="tab">Na uczelni</Text>
-        <Text style={styles.tab} accessibilityRole="tab">W mieście</Text>
+        {challengeScopes.map((item) => {
+          const active = item.key === scope;
+          return (
+            <Pressable
+              key={item.key}
+              onPress={() => changeScope(item.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              hitSlop={8}
+              style={styles.tabPress}
+            >
+              <Text style={[styles.tab, active && styles.tabActive]}>{item.label}</Text>
+              <View style={[styles.tabLine, active && styles.tabLineActive]} />
+            </Pressable>
+          );
+        })}
       </View>
 
-      <Text style={styles.kicker}>DZIŚ</Text>
-      <Text style={styles.title} accessibilityRole="header">Dzisiejsze{`\n`}wyzwanie</Text>
-      <Text style={styles.description}>
-        Zagadaj dziś do 1 osoby,{`\n`}z którą złapiesz{' '}
-        <Text style={styles.accent}>naturalny vibe.</Text>
-      </Text>
-
       <Animated.View
-        accessible
-        accessibilityLabel={`Proponowany starter: ${variants[variant]}`}
-        style={[
-          styles.opener,
-          {
-            opacity: openerMotion,
-            transform: [
-              {
-                translateY: openerMotion.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [7, 0],
-                }),
-              },
-            ],
-          },
-        ]}
+        style={{
+          opacity: openerMotion,
+          transform: [{ translateY: openerMotion.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }],
+        }}
       >
-        <Text style={styles.quote}>“</Text>
-        <Text style={styles.openerText}>{variants[variant]}</Text>
+        <Text style={styles.kicker}>{challenge.eyebrow}</Text>
+        <Text style={styles.title}>{challenge.title}</Text>
+        <Text style={styles.description}>
+          {challenge.description}{' '}
+          <Text style={styles.accent}>{challenge.accent}</Text>
+        </Text>
+
+        <View style={styles.opener}>
+          <Text style={styles.quote}>“</Text>
+          <Text style={styles.openerText}>{easier ? challenge.easier : challenge.opener}</Text>
+        </View>
       </Animated.View>
 
       <Text style={styles.support}>Nie chodzi o ideał. Wystarczy zacząć.</Text>
 
       <Pressable
-        onPress={onStart}
-        style={({ pressed }) => [styles.cta, pressed && styles.pressed, started && styles.ctaDone]}
         accessibilityRole="button"
-        accessibilityLabel={started ? 'Wyzwanie aktywne' : 'Rozpocznij dzisiejsze wyzwanie'}
-        accessibilityState={{ selected: started }}
+        accessibilityLabel={`Rozpocznij sesję: ${challenge.eyebrow}`}
+        onPress={() => onStart(scope)}
+        style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
       >
-        <Text style={styles.ctaText}>{started ? 'Wyzwanie aktywne ✓' : 'Zaczynam'}</Text>
+        <Text style={styles.ctaText}>{started ? 'Ćwicz dalej' : 'Zaczynam'}</Text>
+        <Text style={styles.ctaMeta}>5 min  •  +{challenge.xp} XP</Text>
       </Pressable>
 
       <Text style={styles.secondaryTitle}>Spróbuj też</Text>
       <View style={styles.secondaryRow}>
-        <Pressable
-          onPress={easier}
-          hitSlop={14}
-          accessibilityRole="button"
-          accessibilityLabel="Pokaż prostszy starter"
-        >
-          <Text style={styles.secondaryAction}>Prostsza wersja  →</Text>
+        <Pressable onPress={() => animateCopyChange(() => setEasier((value) => !value))} hitSlop={12} accessibilityRole="button">
+          <Text style={styles.secondaryAction}>{easier ? 'Mocniejsza wersja' : 'Prostsza wersja'}  →</Text>
         </Pressable>
-        <Pressable
-          onPress={() => changeVariant(2)}
-          hitSlop={14}
-          accessibilityRole="button"
-          accessibilityLabel="Pokaż starter na uczelnię"
-        >
-          <Text style={styles.secondaryAction}>Na uczelni  →</Text>
+        <Pressable onPress={() => changeScope(scope === 'campus' ? 'city' : 'campus')} hitSlop={12} accessibilityRole="button">
+          <Text style={styles.secondaryAction}>{scope === 'campus' ? 'W mieście' : 'Na uczelni'}  →</Text>
         </Pressable>
       </View>
 
@@ -145,11 +139,13 @@ const styles = StyleSheet.create({
   brand: { color: colors.ink, fontFamily: fonts.bold, fontSize: 29, lineHeight: 38, letterSpacing: -0.8 },
   brandDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.teal, marginLeft: 5, marginTop: 9 },
   stats: { flexDirection: 'row', gap: 2 },
-  tabs: { marginTop: 22, flexDirection: 'row', justifyContent: 'space-between', paddingRight: 30 },
+  tabs: { marginTop: 22, flexDirection: 'row', gap: 26 },
+  tabPress: { paddingBottom: 2 },
   tab: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 14 },
   tabActive: { color: colors.teal },
-  tabLine: { width: 28, height: 2, borderRadius: 1, backgroundColor: colors.teal, marginTop: 10 },
-  kicker: { marginTop: 36, color: colors.muted, fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.7 },
+  tabLine: { width: '100%', height: 2, borderRadius: 1, backgroundColor: 'transparent', marginTop: 10 },
+  tabLineActive: { backgroundColor: colors.teal },
+  kicker: { marginTop: 34, color: colors.muted, fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.7 },
   title: { marginTop: 12, color: colors.ink, fontFamily: fonts.bold, fontSize: 36, lineHeight: 40, letterSpacing: -1.1 },
   description: { marginTop: 17, color: colors.ink, fontFamily: fonts.regular, fontSize: 20, lineHeight: 29 },
   accent: { color: colors.teal, fontFamily: fonts.bold },
@@ -157,9 +153,9 @@ const styles = StyleSheet.create({
   quote: { color: colors.teal, fontFamily: fonts.bold, fontSize: 42, lineHeight: 46, marginRight: 14, marginTop: -5 },
   openerText: { flex: 1, color: colors.ink, fontFamily: fonts.semibold, fontSize: 21, lineHeight: 29, letterSpacing: -0.15 },
   support: { marginTop: 10, color: colors.muted, fontFamily: fonts.regular, fontSize: 15 },
-  cta: { marginTop: 26, height: 54, borderRadius: 14, backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
-  ctaDone: { backgroundColor: '#088E86' },
+  cta: { marginTop: 26, minHeight: 58, borderRadius: 14, backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center', paddingVertical: 9 },
   ctaText: { color: colors.white, fontFamily: fonts.bold, fontSize: 18 },
+  ctaMeta: { color: 'rgba(255,255,255,0.8)', fontFamily: fonts.medium, fontSize: 11, marginTop: 2 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   secondaryTitle: { marginTop: 36, color: colors.ink, fontFamily: fonts.bold, fontSize: 17 },
   secondaryRow: { marginTop: 19, flexDirection: 'row', justifyContent: 'space-between' },
