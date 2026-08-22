@@ -1,29 +1,85 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-type ZagadajSession = {
+const STORAGE_KEY = 'zagadaj:session:v1';
+
+type PersistedSession = {
   xp: number;
   streak: number;
   challengeStarted: boolean;
+};
+
+type ZagadajSession = PersistedSession & {
+  hydrated: boolean;
   startChallenge: () => void;
+  resetChallenge: () => void;
 };
 
 const ZagadajSessionContext = createContext<ZagadajSession | null>(null);
 
 export function ZagadajSessionProvider({ children }: { children: React.ReactNode }) {
   const [xp, setXp] = useState(620);
+  const [streak, setStreak] = useState(7);
   const [challengeStarted, setChallengeStarted] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const didHydrateRef = useRef(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (!alive || !raw) return;
+        const parsed = JSON.parse(raw) as Partial<PersistedSession>;
+        if (typeof parsed.xp === 'number') setXp(parsed.xp);
+        if (typeof parsed.streak === 'number') setStreak(parsed.streak);
+        if (typeof parsed.challengeStarted === 'boolean') {
+          setChallengeStarted(parsed.challengeStarted);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!alive) return;
+        didHydrateRef.current = true;
+        setHydrated(true);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!didHydrateRef.current) return;
+    const snapshot: PersistedSession = { xp, streak, challengeStarted };
+    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)).catch(() => {});
+  }, [challengeStarted, streak, xp]);
+
+  const startChallenge = useCallback(() => {
+    setChallengeStarted((current) => {
+      if (current) return current;
+      setXp((value) => value + 20);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      return true;
+    });
+  }, []);
+
+  const resetChallenge = useCallback(() => {
+    setChallengeStarted(false);
+    void Haptics.selectionAsync().catch(() => {});
+  }, []);
 
   const value = useMemo<ZagadajSession>(
     () => ({
       xp,
-      streak: 7,
+      streak,
       challengeStarted,
-      startChallenge: () => {
-        if (!challengeStarted) setXp((current) => current + 20);
-        setChallengeStarted(true);
-      },
+      hydrated,
+      startChallenge,
+      resetChallenge,
     }),
-    [challengeStarted, xp],
+    [challengeStarted, hydrated, resetChallenge, startChallenge, streak, xp],
   );
 
   return <ZagadajSessionContext.Provider value={value}>{children}</ZagadajSessionContext.Provider>;
