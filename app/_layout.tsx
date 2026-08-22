@@ -9,7 +9,9 @@ import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
 import { ZagadajSessionProvider, useZagadajSession } from '../src/contexts/ZagadajSessionContext';
 import { colors } from '../src/theme';
 
-enableFreeze(true);
+// SDK 54 / Expo Go / Appetize can be unstable when screens are frozen during
+// auth -> onboarding -> tabs navigator replacement. Keep screens live here.
+enableFreeze(false);
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppNavigator() {
@@ -32,7 +34,7 @@ function AppNavigator() {
         animation: 'slide_from_right',
         gestureEnabled: true,
         fullScreenGestureEnabled: true,
-        freezeOnBlur: true,
+        freezeOnBlur: false,
       }}
     >
       <Stack.Screen name="index" options={{ animation: 'fade' }} />
