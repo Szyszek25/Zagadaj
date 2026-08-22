@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -83,6 +84,11 @@ export function ReelsScreen() {
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [activeId, setActiveId] = useState(reels[0].id);
 
+  const viewabilityConfig = useMemo(
+    () => ({ itemVisiblePercentThreshold: 70, minimumViewTime: 120 }),
+    [],
+  );
+
   const visibility = useRef(({ viewableItems }: { viewableItems: ViewToken<Reel>[] }) => {
     const next = viewableItems[0]?.item?.id;
     if (next) setActiveId(next);
@@ -107,10 +113,18 @@ export function ReelsScreen() {
         decelerationRate="fast"
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={visibility}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 70 }}
+        viewabilityConfig={viewabilityConfig}
+        initialNumToRender={2}
+        maxToRenderPerBatch={2}
+        windowSize={3}
+        removeClippedSubviews={Platform.OS === 'android'}
+        getItemLayout={(_, index) => ({ length: reelHeight, offset: reelHeight * index, index })}
         renderItem={({ item }) => (
-          <View style={[styles.reel, { height: reelHeight }]}>
-            <View style={styles.scene}>
+          <View
+            style={[styles.reel, { height: reelHeight }]}
+            accessibilityLabel={`${item.title.replace('\n', ' ')}. ${item.line}`}
+          >
+            <View style={styles.scene} importantForAccessibility="no-hide-descendants">
               <View style={[styles.person, styles.personLeft, { backgroundColor: item.left }]} />
               <View style={[styles.person, styles.personRight, { backgroundColor: item.right }]} />
               <View style={[styles.counter, { backgroundColor: item.counter }]} />
@@ -133,6 +147,8 @@ export function ReelsScreen() {
             <Pressable
               onPress={() => void Haptics.selectionAsync().catch(() => {})}
               style={({ pressed }) => [styles.play, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Odtwórz rolkę: ${item.title.replace('\n', ' ')}`}
             >
               <Ionicons name="play" size={27} color={colors.white} style={styles.playGlyph} />
             </Pressable>
@@ -153,6 +169,9 @@ export function ReelsScreen() {
                 onPress={() => toggleLike(item.id)}
                 style={({ pressed }) => [styles.action, pressed && styles.pressed]}
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={liked[item.id] ? 'Usuń polubienie' : 'Polub rolkę'}
+                accessibilityState={{ selected: Boolean(liked[item.id]) }}
               >
                 <Ionicons
                   name={liked[item.id] ? 'heart' : 'heart-outline'}
@@ -166,6 +185,8 @@ export function ReelsScreen() {
                 onPress={() => void Haptics.selectionAsync().catch(() => {})}
                 style={({ pressed }) => [styles.action, pressed && styles.pressed]}
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Komentarze, ${item.comments}`}
               >
                 <Ionicons name="chatbubble-outline" color={colors.white} size={27} />
                 <Text style={styles.actionCount}>{item.comments}</Text>
@@ -175,6 +196,9 @@ export function ReelsScreen() {
                 onPress={() => toggleSaved(item.id)}
                 style={({ pressed }) => [styles.action, pressed && styles.pressed]}
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={saved[item.id] ? 'Usuń z zapisanych' : 'Zapisz rolkę'}
+                accessibilityState={{ selected: Boolean(saved[item.id]) }}
               >
                 <Ionicons
                   name={saved[item.id] ? 'bookmark' : 'bookmark-outline'}
@@ -217,7 +241,7 @@ const styles = StyleSheet.create({
   author: { color: '#CCD1D1', fontFamily: fonts.semibold, fontSize: 12, marginTop: 20 },
   swipe: { color: '#A8B0B0', fontFamily: fonts.regular, fontSize: 11, marginTop: 24 },
   actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 22 },
-  action: { alignItems: 'center', minWidth: 44 },
+  action: { alignItems: 'center', minWidth: 44, minHeight: 44 },
   actionCount: { color: colors.white, fontFamily: fonts.semibold, fontSize: 10, marginTop: 4 },
   pressed: { opacity: 0.64, transform: [{ scale: 0.94 }] },
 });
