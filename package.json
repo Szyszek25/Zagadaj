@@ -2,7 +2,7 @@
   "name": "zagadaj-expo-sdk57",
   "version": "1.0.0",
   "private": true,
-  "main": "expo/AppEntry",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -12,9 +12,15 @@
   },
   "dependencies": {
     "expo": "~57.0.1",
+    "expo-constants": "~57.0.9",
+    "expo-font": "~57.0.1",
+    "expo-linking": "~57.0.5",
+    "expo-router": "~57.0.10",
     "expo-status-bar": "~57.0.0",
     "react": "19.2.3",
-    "react-native": "0.86.0"
+    "react-native": "0.86.0",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.26.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
