@@ -1,3 +1,5 @@
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stat } from '../components/Stat';
@@ -19,8 +21,14 @@ const starters = [
 ];
 
 export function ProgressScreen({ xp, streak, challengeStarted }: Props) {
+  const router = useRouter();
   const completedDays = challengeStarted ? 5 : 4;
   const weeklyApproaches = challengeStarted ? 4 : 3;
+
+  const openCoach = () => {
+    void Haptics.selectionAsync().catch(() => {});
+    router.navigate('/(tabs)/coach');
+  };
 
   return (
     <ScrollView
@@ -30,19 +38,19 @@ export function ProgressScreen({ xp, streak, challengeStarted }: Props) {
       contentInsetAdjustmentBehavior="never"
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Postęp</Text>
-        <View style={styles.stats}>
+        <Text style={styles.title} accessibilityRole="header">Postęp</Text>
+        <View style={styles.stats} accessibilityLabel={`${streak} dni serii, ${xp} punktów`}>
           <Stat value={`${streak} dni`} label="seria" />
           <Stat value={`${xp}`} label="punkty" />
         </View>
       </View>
 
-      <Text style={styles.weekTitle}>Twój tydzień</Text>
+      <Text style={styles.weekTitle} accessibilityRole="header">Twój tydzień</Text>
       <Text style={styles.weekSub}>
         {challengeStarted ? 'Dzisiejsze wyzwanie już ruszyło.' : '4 dni z rzędu. Jest rytm.'}
       </Text>
 
-      <View style={styles.days}>
+      <View style={styles.days} accessibilityLabel={`${completedDays} aktywnych dni w tym tygodniu`}>
         {dayLabels.map((label, index) => {
           const done = index < completedDays;
           const current = index === 4;
@@ -63,7 +71,7 @@ export function ProgressScreen({ xp, streak, challengeStarted }: Props) {
       <Text style={styles.metricSub}>w tym tygodniu</Text>
       <Text style={styles.note}>Najlepiej idzie Ci na uczelni i w kawiarni.</Text>
 
-      <Text style={styles.sectionTitle}>Odblokowane startery</Text>
+      <Text style={styles.sectionTitle} accessibilityRole="header">Odblokowane startery</Text>
       {starters.map(([name, meta], index) => (
         <View key={name}>
           <View style={styles.row}>
@@ -74,8 +82,13 @@ export function ProgressScreen({ xp, streak, challengeStarted }: Props) {
         </View>
       ))}
 
-      <Text style={styles.nextTitle}>Co dalej</Text>
-      <Pressable style={({ pressed }) => [styles.nextRow, pressed && styles.pressed]}>
+      <Text style={styles.nextTitle} accessibilityRole="header">Co dalej</Text>
+      <Pressable
+        onPress={openCoach}
+        style={({ pressed }) => [styles.nextRow, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel="Przejdź do lekcji Podtrzymanie rozmowy w Coach"
+      >
         <View style={styles.nextCopy}>
           <Text style={styles.nextName}>Podtrzymanie rozmowy</Text>
           <Text style={styles.nextMeta}>Następny krok, żeby rozmowa płynęła naturalnie.</Text>
@@ -114,7 +127,7 @@ const styles = StyleSheet.create({
   rowMetaAccent: { color: colors.teal },
   rowDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
   nextTitle: { marginTop: 29, color: colors.ink, fontFamily: fonts.bold, fontSize: 20 },
-  nextRow: { marginTop: 13, flexDirection: 'row', alignItems: 'center', paddingVertical: 9 },
+  nextRow: { marginTop: 13, flexDirection: 'row', alignItems: 'center', paddingVertical: 9, minHeight: 52 },
   nextCopy: { flex: 1 },
   nextName: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 17 },
   nextMeta: { color: colors.muted, fontFamily: fonts.regular, fontSize: 12, marginTop: 3 },
