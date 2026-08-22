@@ -1,17 +1,18 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform, StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/theme';
 import { fonts } from '../../src/typography';
 
-const icons: Record<string, string> = {
-  index: '●',
-  reels: '▶',
-  coach: '✦',
-  progress: '▥',
-};
+const iconNames = {
+  index: ['home-outline', 'home'],
+  reels: ['play-circle-outline', 'play-circle'],
+  coach: ['chatbubble-ellipses-outline', 'chatbubble-ellipses'],
+  progress: ['stats-chart-outline', 'stats-chart'],
+} as const;
 
 const tabListeners = {
   tabPress: () => {
@@ -27,6 +28,8 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={({ route }) => {
         const dark = route.name === 'reels';
+        const pair = iconNames[route.name as keyof typeof iconNames] ?? iconNames.index;
+
         return {
           headerShown: false,
           animation: 'shift',
@@ -41,15 +44,17 @@ export default function TabsLayout() {
           tabBarLabelStyle: {
             fontFamily: fonts.semibold,
             fontSize: 11,
-            marginTop: 2,
+            marginTop: 1,
           },
           tabBarIconStyle: {
-            marginTop: 4,
+            marginTop: 3,
           },
           tabBarIcon: ({ color, focused }) => (
-            <Text style={{ color, fontFamily: fonts.bold, fontSize: focused ? 19 : 18 }}>
-              {icons[route.name] ?? '•'}
-            </Text>
+            <Ionicons
+              name={pair[focused ? 1 : 0]}
+              color={color}
+              size={focused ? 26 : 25}
+            />
           ),
           tabBarStyle: {
             position: 'absolute',
