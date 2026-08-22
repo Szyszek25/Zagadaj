@@ -27,11 +27,15 @@ test('root layout keeps safe area, error boundary and state providers', async ()
   assert.match(source, /practice-session/);
 });
 
-test('tabs keep native shift animation and auth guard', async () => {
+test('tabs expose the confidence-training product loop', async () => {
   const source = await read('app/(tabs)/_layout.tsx');
   assert.match(source, /animation: 'shift'/);
   assert.match(source, /Redirect href="\/login"/);
   assert.match(source, /Redirect href="\/onboarding"/);
+  for (const label of ['Deck', 'Garden', 'Spoty', 'Learn', 'Coach']) {
+    assert.ok(source.includes(label), `Missing main tab ${label}`);
+  }
+  assert.match(source, /name="reels" options=\{\{ href: null \}\}/);
 });
 
 test('CardVideo keeps MyCampus-style player safety', async () => {
@@ -42,15 +46,34 @@ test('CardVideo keeps MyCampus-style player safety', async () => {
   assert.match(source, /textureView/);
 });
 
-test('Snack publisher contains every non-tab product dependency', async () => {
+test('Garden has progressive visual assets', async () => {
+  const source = await read('src/components/GardenScene.tsx');
+  assert.match(source, /function Tree/);
+  assert.match(source, /pond/);
+  assert.match(source, /grown >= 5/);
+});
+
+test('Vibe Map stays privacy-safe by design', async () => {
+  const source = await read('src/screens/VibeMapScreen.tsx');
+  assert.match(source, /zbiorczy sygnał aktywności/);
+  assert.match(source, /anonimowych check-inach/);
+  assert.doesNotMatch(source, /userLatitude|userLongitude|liveUserLocation/);
+});
+
+test('Snack publisher contains the full product flow', async () => {
   const source = await read('scripts/publish-multifile-snack.mjs');
   for (const required of [
     'src/components/AppErrorBoundary.tsx',
     'src/components/CardVideo.tsx',
+    'src/components/GardenScene.tsx',
     'src/contexts/AuthContext.tsx',
     'src/domain/onboarding.ts',
     'src/domain/practiceSession.ts',
     'src/screens/PracticeSessionScreen.tsx',
+    'src/screens/VibeMapScreen.tsx',
+    'src/screens/LearnScreen.tsx',
+    'app/(tabs)/spots.tsx',
+    'app/(tabs)/learn.tsx',
   ]) {
     assert.ok(source.includes(required), `Snack missing ${required}`);
   }
