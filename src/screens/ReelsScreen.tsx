@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import {
   FlatList,
@@ -78,6 +80,7 @@ export function ReelsScreen() {
   const tabChrome = spacing.navHeight + Math.max(insets.bottom, 4);
   const reelHeight = Math.max(520, height - tabChrome);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [activeId, setActiveId] = useState(reels[0].id);
 
   const visibility = useRef(({ viewableItems }: { viewableItems: ViewToken<Reel>[] }) => {
@@ -85,12 +88,23 @@ export function ReelsScreen() {
     if (next) setActiveId(next);
   }).current;
 
+  const toggleLike = (id: string) => {
+    setLiked((old) => ({ ...old, [id]: !old[id] }));
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  };
+
+  const toggleSaved = (id: string) => {
+    setSaved((old) => ({ ...old, [id]: !old[id] }));
+    void Haptics.selectionAsync().catch(() => {});
+  };
+
   return (
     <View style={styles.screen}>
       <FlatList
         data={reels}
         keyExtractor={(item) => item.id}
         pagingEnabled
+        decelerationRate="fast"
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={visibility}
         viewabilityConfig={{ itemVisiblePercentThreshold: 70 }}
@@ -100,6 +114,7 @@ export function ReelsScreen() {
               <View style={[styles.person, styles.personLeft, { backgroundColor: item.left }]} />
               <View style={[styles.person, styles.personRight, { backgroundColor: item.right }]} />
               <View style={[styles.counter, { backgroundColor: item.counter }]} />
+              <View style={styles.sceneShade} />
             </View>
 
             <View style={[styles.topOverlay, { top: insets.top + 14 }]}>
@@ -115,8 +130,11 @@ export function ReelsScreen() {
               </View>
             </View>
 
-            <Pressable style={({ pressed }) => [styles.play, pressed && styles.pressed]}>
-              <Text style={styles.playGlyph}>▶</Text>
+            <Pressable
+              onPress={() => void Haptics.selectionAsync().catch(() => {})}
+              style={({ pressed }) => [styles.play, pressed && styles.pressed]}
+            >
+              <Ionicons name="play" size={27} color={colors.white} style={styles.playGlyph} />
             </Pressable>
 
             <View style={[styles.bottomCopy, { bottom: 82 + insets.bottom }]}>
@@ -132,19 +150,38 @@ export function ReelsScreen() {
 
             <View style={[styles.actions, { bottom: 150 + insets.bottom }]}>
               <Pressable
-                onPress={() => setLiked((old) => ({ ...old, [item.id]: !old[item.id] }))}
+                onPress={() => toggleLike(item.id)}
                 style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+                hitSlop={8}
               >
-                <Text style={[styles.actionGlyph, liked[item.id] && { color: colors.teal }]}>♥</Text>
+                <Ionicons
+                  name={liked[item.id] ? 'heart' : 'heart-outline'}
+                  color={liked[item.id] ? colors.teal : colors.white}
+                  size={29}
+                />
                 <Text style={styles.actionCount}>{item.likes}</Text>
               </Pressable>
-              <View style={styles.action}>
-                <Text style={styles.actionGlyph}>•••</Text>
+
+              <Pressable
+                onPress={() => void Haptics.selectionAsync().catch(() => {})}
+                style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+                hitSlop={8}
+              >
+                <Ionicons name="chatbubble-outline" color={colors.white} size={27} />
                 <Text style={styles.actionCount}>{item.comments}</Text>
-              </View>
-              <View style={styles.action}>
-                <Text style={styles.actionGlyph}>▱</Text>
-              </View>
+              </Pressable>
+
+              <Pressable
+                onPress={() => toggleSaved(item.id)}
+                style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={saved[item.id] ? 'bookmark' : 'bookmark-outline'}
+                  color={colors.white}
+                  size={27}
+                />
+              </Pressable>
             </View>
           </View>
         )}
@@ -161,15 +198,16 @@ const styles = StyleSheet.create({
   personLeft: { left: '11%' },
   personRight: { right: '9%' },
   counter: { position: 'absolute', left: 0, right: 0, top: '54%', height: '16%', opacity: 0.72 },
+  sceneShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.14)' },
   topOverlay: { position: 'absolute', left: 20, right: 20 },
   title: { color: colors.white, fontFamily: fonts.bold, fontSize: 28, letterSpacing: -0.7 },
   sub: { color: '#CCD1D1', fontFamily: fonts.regular, fontSize: 12, marginTop: -2 },
   filters: { marginTop: 18, flexDirection: 'row', gap: 30 },
   filterActive: { color: colors.white, fontFamily: fonts.bold, fontSize: 13 },
   filter: { color: '#B8BDBF', fontFamily: fonts.semibold, fontSize: 13 },
-  filterLine: { marginTop: 10, width: 34, height: 3, borderRadius: 2, backgroundColor: colors.teal },
-  play: { position: 'absolute', alignSelf: 'center', top: '41%', width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(8,9,9,0.5)', alignItems: 'center', justifyContent: 'center' },
-  playGlyph: { color: colors.white, fontFamily: fonts.semibold, fontSize: 24, marginLeft: 4 },
+  filterLine: { marginTop: 10, width: 34, height: 2, borderRadius: 1, backgroundColor: colors.teal },
+  play: { position: 'absolute', alignSelf: 'center', top: '41%', width: 62, height: 62, borderRadius: 31, backgroundColor: 'rgba(8,9,9,0.46)', alignItems: 'center', justifyContent: 'center' },
+  playGlyph: { marginLeft: 3 },
   bottomCopy: { position: 'absolute', left: 20, right: 62 },
   place: { color: '#D4DBDB', fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.5 },
   titleRow: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
@@ -178,9 +216,8 @@ const styles = StyleSheet.create({
   line: { color: colors.white, fontFamily: fonts.regular, fontSize: 15, lineHeight: 21, marginTop: 12 },
   author: { color: '#CCD1D1', fontFamily: fonts.semibold, fontSize: 12, marginTop: 20 },
   swipe: { color: '#A8B0B0', fontFamily: fonts.regular, fontSize: 11, marginTop: 24 },
-  actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 20 },
-  action: { alignItems: 'center', minWidth: 42 },
-  actionGlyph: { color: colors.white, fontFamily: fonts.bold, fontSize: 24 },
-  actionCount: { color: colors.white, fontFamily: fonts.semibold, fontSize: 10, marginTop: 3 },
-  pressed: { opacity: 0.65, transform: [{ scale: 0.96 }] },
+  actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 22 },
+  action: { alignItems: 'center', minWidth: 44 },
+  actionCount: { color: colors.white, fontFamily: fonts.semibold, fontSize: 10, marginTop: 4 },
+  pressed: { opacity: 0.64, transform: [{ scale: 0.94 }] },
 });
