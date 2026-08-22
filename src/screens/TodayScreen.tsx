@@ -51,33 +51,35 @@ export function TodayScreen({ xp, streak, started, onStart }: Props) {
       contentInsetAdjustmentBehavior="never"
     >
       <View style={styles.header}>
-        <View style={styles.brandRow}>
+        <View style={styles.brandRow} accessibilityRole="header">
           <Text style={styles.brand}>Zagadaj</Text>
           <View style={styles.brandDot} />
         </View>
-        <View style={styles.stats}>
+        <View style={styles.stats} accessibilityLabel={`${streak} dni serii, ${xp} punktów`}>
           <Stat value={`${streak} dni`} label="seria" />
           <Stat value={`${xp}`} label="punkty" />
         </View>
       </View>
 
-      <View style={styles.tabs}>
+      <View style={styles.tabs} accessibilityRole="tablist">
         <View>
-          <Text style={[styles.tab, styles.tabActive]}>Dziś</Text>
+          <Text style={[styles.tab, styles.tabActive]} accessibilityRole="tab" accessibilityState={{ selected: true }}>Dziś</Text>
           <View style={styles.tabLine} />
         </View>
-        <Text style={styles.tab}>Na uczelni</Text>
-        <Text style={styles.tab}>W mieście</Text>
+        <Text style={styles.tab} accessibilityRole="tab">Na uczelni</Text>
+        <Text style={styles.tab} accessibilityRole="tab">W mieście</Text>
       </View>
 
       <Text style={styles.kicker}>DZIŚ</Text>
-      <Text style={styles.title}>Dzisiejsze{`\n`}wyzwanie</Text>
+      <Text style={styles.title} accessibilityRole="header">Dzisiejsze{`\n`}wyzwanie</Text>
       <Text style={styles.description}>
         Zagadaj dziś do 1 osoby,{`\n`}z którą złapiesz{' '}
         <Text style={styles.accent}>naturalny vibe.</Text>
       </Text>
 
       <Animated.View
+        accessible
+        accessibilityLabel={`Proponowany starter: ${variants[variant]}`}
         style={[
           styles.opener,
           {
@@ -102,16 +104,29 @@ export function TodayScreen({ xp, streak, started, onStart }: Props) {
       <Pressable
         onPress={onStart}
         style={({ pressed }) => [styles.cta, pressed && styles.pressed, started && styles.ctaDone]}
+        accessibilityRole="button"
+        accessibilityLabel={started ? 'Wyzwanie aktywne' : 'Rozpocznij dzisiejsze wyzwanie'}
+        accessibilityState={{ selected: started }}
       >
         <Text style={styles.ctaText}>{started ? 'Wyzwanie aktywne ✓' : 'Zaczynam'}</Text>
       </Pressable>
 
       <Text style={styles.secondaryTitle}>Spróbuj też</Text>
       <View style={styles.secondaryRow}>
-        <Pressable onPress={easier} hitSlop={12}>
+        <Pressable
+          onPress={easier}
+          hitSlop={14}
+          accessibilityRole="button"
+          accessibilityLabel="Pokaż prostszy starter"
+        >
           <Text style={styles.secondaryAction}>Prostsza wersja  →</Text>
         </Pressable>
-        <Pressable onPress={() => changeVariant(2)} hitSlop={12}>
+        <Pressable
+          onPress={() => changeVariant(2)}
+          hitSlop={14}
+          accessibilityRole="button"
+          accessibilityLabel="Pokaż starter na uczelnię"
+        >
           <Text style={styles.secondaryAction}>Na uczelni  →</Text>
         </Pressable>
       </View>
