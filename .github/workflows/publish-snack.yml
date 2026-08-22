@@ -1,0 +1,27 @@
+name: Publish Expo Snack
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Snack SDK
+        run: |
+          mkdir -p /tmp/snack-publisher
+          cp scripts/publish-snack.mjs /tmp/snack-publisher/publish-snack.mjs
+          cd /tmp/snack-publisher
+          npm init -y >/dev/null 2>&1
+          npm install snack-sdk --no-audit --no-fund
+      - name: Publish anonymous Snack
+        run: |
+          cd /tmp/snack-publisher
+          node publish-snack.mjs
