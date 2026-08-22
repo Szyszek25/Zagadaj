@@ -41,6 +41,7 @@ const snack = new Snack({
   sdkVersion: '57.0.0',
   files,
   dependencies: {
+    '@expo/vector-icons': { version: '^15.0.3' },
     '@react-native-async-storage/async-storage': { version: '2.2.0' },
     'expo-haptics': { version: '~57.0.1' },
     'expo-router': { version: '~57.0.13' },
