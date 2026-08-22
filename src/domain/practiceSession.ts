@@ -54,3 +54,12 @@ export function practiceProgress(snapshot: PracticeSnapshot): number {
   if (snapshot.durationSeconds <= 0) return 1;
   return Math.min(1, Math.max(0, 1 - snapshot.remainingSeconds / snapshot.durationSeconds));
 }
+
+export function practiceRewardForSeconds(fullRewardXp: number, secondsSpent: number): number {
+  const reward = Math.max(1, Math.round(fullRewardXp));
+  const seconds = Math.max(0, Math.round(secondsSpent));
+  if (seconds >= 240) return reward;
+  if (seconds >= 60) return Math.max(5, Math.ceil(reward * 0.5));
+  if (seconds >= 15) return 5;
+  return 0;
+}

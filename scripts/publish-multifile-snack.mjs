@@ -20,6 +20,7 @@ const projectFiles = [
   'src/contexts/AuthContext.tsx',
   'src/contexts/ZagadajSessionContext.tsx',
   'src/domain/challenges.ts',
+  'src/domain/onboarding.ts',
   'src/domain/practiceSession.ts',
   'src/screens/LoginScreen.tsx',
   'src/screens/OnboardingScreen.tsx',

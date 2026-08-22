@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { advanceQuestion, createPracticeSnapshot, formatPracticeClock, practiceProgress, tickPractice } from '../src/domain/practiceSession';
+import {
+  advanceQuestion,
+  createPracticeSnapshot,
+  formatPracticeClock,
+  practiceProgress,
+  practiceRewardForSeconds,
+  tickPractice,
+  type PracticeSnapshot,
+} from '../src/domain/practiceSession';
 
 test('practice clock formats minutes and seconds', () => {
   assert.equal(formatPracticeClock(300), '5:00');
@@ -9,7 +17,7 @@ test('practice clock formats minutes and seconds', () => {
 });
 
 test('running session ticks down and finishes at zero', () => {
-  let state = { ...createPracticeSnapshot(30), status: 'running' as const };
+  let state: PracticeSnapshot = { ...createPracticeSnapshot(30), status: 'running' };
   for (let i = 0; i < 29; i += 1) state = tickPractice(state);
   assert.equal(state.remainingSeconds, 1);
   assert.equal(state.status, 'running');
@@ -19,7 +27,7 @@ test('running session ticks down and finishes at zero', () => {
 });
 
 test('paused session does not tick', () => {
-  const state = { ...createPracticeSnapshot(120), status: 'paused' as const };
+  const state: PracticeSnapshot = { ...createPracticeSnapshot(120), status: 'paused' };
   assert.deepEqual(tickPractice(state), state);
 });
 
@@ -38,4 +46,12 @@ test('progress is clamped between 0 and 1', () => {
   assert.equal(practiceProgress(base), 0);
   assert.equal(practiceProgress({ ...base, remainingSeconds: 50 }), 0.5);
   assert.equal(practiceProgress({ ...base, remainingSeconds: 0 }), 1);
+});
+
+test('reward is proportional and never exceeds full reward', () => {
+  assert.equal(practiceRewardForSeconds(20, 300), 20);
+  assert.equal(practiceRewardForSeconds(25, 240), 25);
+  assert.equal(practiceRewardForSeconds(30, 90), 15);
+  assert.equal(practiceRewardForSeconds(20, 20), 5);
+  assert.equal(practiceRewardForSeconds(20, 5), 0);
 });

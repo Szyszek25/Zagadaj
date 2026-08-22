@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
-import { useFocusEffect } from 'expo-router';
+import { useIsFocused } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 const MAX_CONCURRENT_PLAYERS = 3;
@@ -28,20 +28,13 @@ function Player({
   posterUri,
   onAspectRatio,
 }: CardVideoProps) {
-  const [focused, setFocused] = useState(true);
+  const isFocused = useIsFocused();
   const [ready, setReady] = useState(false);
   const videoSource = useMemo(() => ({ uri: source }), [source]);
   const player = useVideoPlayer(videoSource, (instance) => {
     instance.loop = true;
     instance.muted = muted;
   });
-
-  useFocusEffect(
-    useCallback(() => {
-      setFocused(true);
-      return () => setFocused(false);
-    }, []),
-  );
 
   useEffect(() => {
     mountedPlayers += 1;
@@ -70,10 +63,10 @@ function Player({
   }, [onAspectRatio, player]);
 
   useEffect(() => {
-    const navigationOk = respectNavigationFocus ? focused : true;
+    const navigationOk = respectNavigationFocus ? isFocused : true;
     if (navigationOk && isVisible) player.play();
     else player.pause();
-  }, [focused, isVisible, player, respectNavigationFocus]);
+  }, [isFocused, isVisible, player, respectNavigationFocus]);
 
   return (
     <View style={[styles.video, style]} pointerEvents="none">

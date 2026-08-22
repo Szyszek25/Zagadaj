@@ -5,18 +5,19 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, type ZagadajProfile } from '../contexts/AuthContext';
+import { MAX_INTERESTS, MIN_INTERESTS, isProfileComplete, toggleInterestSelection } from '../domain/onboarding';
 import { colors } from '../theme';
 import { fonts } from '../typography';
 
 type Draft = Partial<ZagadajProfile>;
 
 type Step =
-  | { key: 'name'; title: 'Jak masz na imię? 👋'; type: 'text' }
-  | { key: 'context'; title: 'Gdzie najczęściej poznajesz ludzi?'; type: 'single'; options: Array<[ZagadajProfile['context'], string]> }
-  | { key: 'city'; title: 'W jakim mieście chcesz ćwiczyć?'; type: 'city' }
-  | { key: 'goal'; title: 'Po co chcesz częściej zagadywać?'; type: 'single'; options: Array<[ZagadajProfile['goal'], string]> }
-  | { key: 'confidence'; title: 'Jak dziś czujesz się z pierwszym krokiem?'; type: 'single'; options: Array<[ZagadajProfile['confidence'], string]> }
-  | { key: 'interests'; title: 'Co ma Ci podpowiadać lepsze tematy?'; type: 'multi'; options: string[] };
+  | { key: 'name'; title: string; type: 'text' }
+  | { key: 'context'; title: string; type: 'single'; options: Array<[ZagadajProfile['context'], string]> }
+  | { key: 'city'; title: string; type: 'city' }
+  | { key: 'goal'; title: string; type: 'single'; options: Array<[ZagadajProfile['goal'], string]> }
+  | { key: 'confidence'; title: string; type: 'single'; options: Array<[ZagadajProfile['confidence'], string]> }
+  | { key: 'interests'; title: string; type: 'multi'; options: string[] };
 
 const steps: Step[] = [
   { key: 'name', title: 'Jak masz na imię? 👋', type: 'text' },
@@ -71,59 +72,57 @@ export function OnboardingScreen() {
   const [cityText, setCityText] = useState('');
   const [busy, setBusy] = useState(false);
   const motion = useRef(new Animated.Value(1)).current;
-  const step = steps[index];
+  const step = steps[index] ?? steps[0];
+
+  const effectiveDraft = useMemo<Draft>(() => {
+    if (step.key === 'city' && cityText.trim()) return { ...draft, city: cityText.trim() };
+    return draft;
+  }, [cityText, draft, step.key]);
 
   const canContinue = useMemo(() => {
     if (step.key === 'name') return Boolean(draft.name?.trim());
     if (step.key === 'city') return Boolean((draft.city || cityText).trim());
-    if (step.key === 'interests') return (draft.interests?.length ?? 0) >= 2;
+    if (step.key === 'interests') return (draft.interests?.length ?? 0) >= MIN_INTERESTS;
     return Boolean(draft[step.key]);
-  }, [cityText, draft, step]);
+  }, [cityText, draft, step.key]);
 
   const animateTo = (next: number) => {
     Animated.timing(motion, { toValue: 0, duration: 110, useNativeDriver: true }).start(() => {
-      setIndex(next);
+      setIndex(Math.max(0, Math.min(steps.length - 1, next)));
       motion.setValue(0);
       Animated.spring(motion, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 190, mass: 0.65 }).start();
     });
   };
 
-  const select = (key: keyof ZagadajProfile, value: ZagadajProfile[keyof ZagadajProfile]) => {
+  const select = <K extends keyof ZagadajProfile>(key: K, value: ZagadajProfile[K]) => {
     setDraft((old) => ({ ...old, [key]: value }));
     void Haptics.selectionAsync().catch(() => {});
   };
 
   const toggleInterest = (interest: string) => {
-    setDraft((old) => {
-      const current = old.interests ?? [];
-      const next = current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest];
-      return { ...old, interests: next.slice(0, 6) };
-    });
+    setDraft((old) => ({ ...old, interests: toggleInterestSelection(old.interests ?? [], interest) }));
     void Haptics.selectionAsync().catch(() => {});
   };
 
   const continueFlow = async () => {
     if (!canContinue || busy) return;
-    if (step.key === 'city' && cityText.trim()) {
-      setDraft((old) => ({ ...old, city: cityText.trim() }));
-    }
+
+    const nextDraft: Draft = step.key === 'city' && cityText.trim()
+      ? { ...draft, city: cityText.trim() }
+      : effectiveDraft;
+
+    if (step.key === 'city' && cityText.trim()) setDraft(nextDraft);
+
     if (index < steps.length - 1) {
       animateTo(index + 1);
       return;
     }
 
-    const profile: ZagadajProfile = {
-      name: draft.name!.trim(),
-      context: draft.context!,
-      city: (draft.city || cityText || 'Warszawa').trim(),
-      goal: draft.goal!,
-      confidence: draft.confidence!,
-      interests: draft.interests ?? [],
-    };
+    if (!isProfileComplete(nextDraft)) return;
 
     setBusy(true);
     try {
-      await completeOnboarding(profile);
+      await completeOnboarding(nextDraft);
       router.replace('/(tabs)');
     } finally {
       setBusy(false);
@@ -192,7 +191,7 @@ export function OnboardingScreen() {
             </View>
             <View style={styles.chips}>
               {popularCities.map((city) => {
-                const active = draft.city === city;
+                const active = draft.city === city && !cityText;
                 return (
                   <Pressable
                     key={city}
@@ -217,7 +216,11 @@ export function OnboardingScreen() {
               return (
                 <Pressable
                   key={String(value)}
-                  onPress={() => select(step.key as keyof ZagadajProfile, value)}
+                  onPress={() => {
+                    if (step.key === 'context') select('context', value as ZagadajProfile['context']);
+                    if (step.key === 'goal') select('goal', value as ZagadajProfile['goal']);
+                    if (step.key === 'confidence') select('confidence', value as ZagadajProfile['confidence']);
+                  }}
                   style={({ pressed }) => [styles.option, active && styles.optionActive, pressed && styles.pressed]}
                 >
                   <Text style={[styles.optionText, active && styles.optionTextActive]}>{label}</Text>
@@ -230,12 +233,18 @@ export function OnboardingScreen() {
 
         {step.type === 'multi' ? (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.multiContent}>
-            <Text style={styles.hint}>Wybierz minimum 2, maksymalnie 6.</Text>
+            <Text style={styles.hint}>Wybierz {MIN_INTERESTS}–{MAX_INTERESTS}. Dzięki temu pytania będą mniej losowe.</Text>
             <View style={styles.chips}>
               {step.options.map((item) => {
                 const active = draft.interests?.includes(item) ?? false;
+                const blocked = !active && (draft.interests?.length ?? 0) >= MAX_INTERESTS;
                 return (
-                  <Pressable key={item} onPress={() => toggleInterest(item)} style={[styles.chip, styles.interestChip, active && styles.chipActive]}>
+                  <Pressable
+                    key={item}
+                    onPress={() => toggleInterest(item)}
+                    disabled={blocked}
+                    style={[styles.chip, styles.interestChip, active && styles.chipActive, blocked && styles.blocked]}
+                  >
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
                   </Pressable>
                 );
@@ -283,6 +292,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.teal },
   chipText: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 14 },
   chipTextActive: { color: colors.white },
+  blocked: { opacity: 0.38 },
   multiContent: { paddingTop: 22, paddingBottom: 20 },
   hint: { color: colors.muted, fontFamily: fonts.regular, fontSize: 13, marginBottom: 14 },
   cta: { height: 56, borderRadius: 14, backgroundColor: colors.teal, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },

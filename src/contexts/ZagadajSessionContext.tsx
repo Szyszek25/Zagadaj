@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChallengeScope } from '../domain/challenges';
+import { getChallenge, type ChallengeScope } from '../domain/challenges';
+import { practiceRewardForSeconds } from '../domain/practiceSession';
 
 const STORAGE_KEY = 'zagadaj:session:v1';
 const HYDRATION_TIMEOUT_MS = 800;
@@ -25,7 +26,7 @@ type ZagadajSession = PersistedSession & {
   hydrated: boolean;
   startChallenge: () => void;
   resetChallenge: () => void;
-  finishPractice: (completion: PracticeCompletion) => void;
+  finishPractice: (completion: PracticeCompletion) => number;
 };
 
 const ZagadajSessionContext = createContext<ZagadajSession | null>(null);
@@ -92,22 +93,20 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
   }, [challengeStarted, completedSessions, lastPracticeScope, streak, totalPracticeSeconds, xp]);
 
   const startChallenge = useCallback(() => {
-    setChallengeStarted((current) => {
-      if (current) return current;
-      setXp((value) => value + 20);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      return true;
-    });
+    setChallengeStarted(true);
+    void Haptics.selectionAsync().catch(() => {});
   }, []);
 
   const finishPractice = useCallback((completion: PracticeCompletion) => {
     const safeSeconds = Math.max(0, Math.round(completion.secondsSpent));
-    const reward = safeSeconds >= 240 ? 30 : safeSeconds >= 60 ? 15 : 5;
-    setXp((value) => value + reward);
+    const fullReward = getChallenge(completion.scope).xp;
+    const reward = practiceRewardForSeconds(fullReward, safeSeconds);
+    if (reward > 0) setXp((value) => value + reward);
     setCompletedSessions((value) => value + 1);
     setTotalPracticeSeconds((value) => value + safeSeconds);
     setLastPracticeScope(completion.scope);
     setChallengeStarted(true);
+    return reward;
   }, []);
 
   const resetChallenge = useCallback(() => {
