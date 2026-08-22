@@ -1,6 +1,6 @@
 # Zagadaj — Expo SDK 57
 
-Gotowy prototyp aplikacji **Zagadaj** przygotowany pod **Expo SDK 57** i Expo Go.
+Mobilny prototyp **Zagadaj** działający w Expo Go i zorganizowany jak normalna aplikacja Expo Router.
 
 ## Uruchomienie
 
@@ -9,21 +9,39 @@ npm install
 npx expo start
 ```
 
-Następnie zeskanuj kod QR w Expo Go.
+Następnie zeskanuj QR w Expo Go.
 
-## Ekrany
+## Architektura
 
-- **Dziś** — dzienne wyzwanie, opener i XP
-- **Rolki** — pionowy feed z zagadywania
-- **Coach** — szybkie podpowiedzi do sytuacji na żywo
-- **Postęp** — seria, tygodniowy wynik i odblokowane startery
+```text
+app/
+  _layout.tsx
+  (tabs)/
+    _layout.tsx
+    index.tsx
+    reels.tsx
+    coach.tsx
+    progress.tsx
+src/
+  contexts/
+  screens/
+  theme.ts
+  typography.ts
+```
+
+- `app/_layout.tsx` — root `Stack`, `SafeAreaProvider`, globalne providery
+- `app/(tabs)/_layout.tsx` — bottom tabs i `animation: 'shift'`
+- ekrany korzystają z `SafeAreaView` / `useSafeAreaInsets`
+- Rolki są edge-to-edge i uwzględniają notch oraz dolny inset
+- wspólny stan XP/serii jest w `ZagadajSessionProvider`
 
 ## Stack
 
 - Expo SDK 57
 - React Native 0.86
-- React 19
+- React 19.2
+- Expo Router 57
 - TypeScript
-- `@expo/vector-icons`
+- react-native-safe-area-context
 
-Projekt nie wymaga Tailwinda ani natywnych modułów spoza Expo Go.
+Typografia jest przygotowana pod API Proxima Nova używane w MyCampus. Dopóki pliki fontów nie są skopiowane do tego repo, używany jest bezpieczny systemowy fallback, aby projekt nadal uruchamiał się w Expo Go.
