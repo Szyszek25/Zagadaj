@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stat } from '../components/Stat';
 import { colors, spacing } from '../theme';
+import { fonts } from '../typography';
 
 type Props = { xp: number; streak: number };
 
@@ -23,7 +24,12 @@ const starters = [
 
 export function ProgressScreen({ xp, streak }: Props) {
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="never"
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Postęp</Text>
         <View style={styles.stats}>
@@ -76,33 +82,33 @@ export function ProgressScreen({ xp, streak }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: spacing.page, paddingBottom: spacing.navHeight + 28 },
+  content: { paddingHorizontal: spacing.page, paddingBottom: spacing.navHeight + 34 },
   header: { marginTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { color: colors.ink, fontSize: 30, fontWeight: '800', letterSpacing: -0.8 },
+  title: { color: colors.ink, fontFamily: fonts.bold, fontSize: 30, letterSpacing: -0.8 },
   stats: { flexDirection: 'row', gap: 2 },
-  weekTitle: { marginTop: 34, color: colors.ink, fontSize: 27, fontWeight: '800', letterSpacing: -0.7 },
-  weekSub: { marginTop: 2, color: colors.muted, fontSize: 14 },
+  weekTitle: { marginTop: 34, color: colors.ink, fontFamily: fonts.bold, fontSize: 27, letterSpacing: -0.7 },
+  weekSub: { marginTop: 2, color: colors.muted, fontFamily: fonts.regular, fontSize: 14 },
   days: { marginTop: 22, flexDirection: 'row', justifyContent: 'space-between' },
   day: { width: 40, alignItems: 'center' },
-  dayLabel: { color: colors.muted, fontSize: 10, fontWeight: '600' },
+  dayLabel: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 10 },
   dayCircle: { marginTop: 11, width: 30, height: 30, borderRadius: 15, backgroundColor: colors.soft, alignItems: 'center', justifyContent: 'center' },
   dayDone: { backgroundColor: colors.tealSoft },
-  dayValue: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  dayValueDone: { color: colors.teal, fontSize: 14, fontWeight: '800' },
+  dayValue: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 13 },
+  dayValueDone: { color: colors.teal, fontFamily: fonts.bold, fontSize: 14 },
   divider: { marginTop: 24, height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
-  metric: { marginTop: 28, color: colors.ink, fontSize: 31, fontWeight: '800', letterSpacing: -0.9 },
-  metricSub: { color: colors.muted, fontSize: 16 },
-  note: { marginTop: 14, color: colors.muted, fontSize: 14 },
-  sectionTitle: { marginTop: 38, color: colors.ink, fontSize: 20, fontWeight: '700' },
+  metric: { marginTop: 28, color: colors.ink, fontFamily: fonts.bold, fontSize: 31, letterSpacing: -0.9 },
+  metricSub: { color: colors.muted, fontFamily: fonts.regular, fontSize: 16 },
+  note: { marginTop: 14, color: colors.muted, fontFamily: fonts.regular, fontSize: 14 },
+  sectionTitle: { marginTop: 38, color: colors.ink, fontFamily: fonts.bold, fontSize: 20 },
   row: { height: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowTitle: { color: colors.ink, fontSize: 16, fontWeight: '600' },
-  rowMeta: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  rowTitle: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 16 },
+  rowMeta: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 13 },
   rowMetaAccent: { color: colors.teal },
   rowDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
-  nextTitle: { marginTop: 26, color: colors.ink, fontSize: 20, fontWeight: '700' },
+  nextTitle: { marginTop: 26, color: colors.ink, fontFamily: fonts.bold, fontSize: 20 },
   nextRow: { marginTop: 14, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  nextName: { color: colors.ink, fontSize: 17, fontWeight: '600' },
-  nextMeta: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  nextArrow: { color: colors.teal, fontSize: 22, marginLeft: 10 },
+  nextName: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 17 },
+  nextMeta: { color: colors.muted, fontFamily: fonts.regular, fontSize: 12, marginTop: 3 },
+  nextArrow: { color: colors.teal, fontFamily: fonts.medium, fontSize: 22, marginLeft: 10 },
   pressed: { opacity: 0.6 },
 });
