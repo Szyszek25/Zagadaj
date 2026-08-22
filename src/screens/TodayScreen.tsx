@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stat } from '../components/Stat';
 import { challengeScopes, getChallenge, type ChallengeScope } from '../domain/challenges';
 import { colors, spacing } from '../theme';
@@ -15,151 +15,120 @@ type Props = {
   onStart: (scope: ChallengeScope) => void;
 };
 
-export function TodayScreen({ xp, streak, started, scope, onScopeChange, onStart }: Props) {
-  const [easier, setEasier] = useState(false);
-  const openerMotion = useRef(new Animated.Value(1)).current;
-  const challenge = getChallenge(scope);
+const scopeLabels: Record<ChallengeScope, string> = {
+  today: 'Codzienność',
+  campus: 'Uczelnia',
+  city: 'Miasto',
+};
 
-  const animateCopyChange = (change: () => void) => {
+const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' });
+
+export function TodayScreen({ xp, streak, scope, onScopeChange, onStart }: Props) {
+  const lastTapRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const challenge = getChallenge(scope);
+  const index = Math.max(0, challengeScopes.findIndex((item) => item.key === scope));
+  const tier = index + 1;
+
+  const nextScope = useMemo(() => {
+    const nextIndex = (index + 1) % challengeScopes.length;
+    return challengeScopes[nextIndex]?.key ?? 'today';
+  }, [index]);
+
+  const skip = () => {
+    onScopeChange(nextScope);
     void Haptics.selectionAsync().catch(() => {});
-    Animated.timing(openerMotion, {
-      toValue: 0,
-      duration: 100,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start(() => {
-      change();
-      openerMotion.setValue(0);
-      Animated.timing(openerMotion, {
-        toValue: 1,
-        duration: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    });
   };
 
-  const changeScope = (next: ChallengeScope) => {
-    if (next === scope) return;
-    animateCopyChange(() => {
-      setEasier(false);
-      onScopeChange(next);
-    });
+  const handleCardPress = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 330) {
+      lastTapRef.current = 0;
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      onStart(scope);
+      return;
+    }
+    lastTapRef.current = now;
   };
 
   return (
-    <ScrollView
+    <View
       style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior="never"
+      onTouchStart={(event) => {
+        touchStartYRef.current = event.nativeEvent.pageY;
+      }}
+      onTouchEnd={(event) => {
+        const distance = touchStartYRef.current - event.nativeEvent.pageY;
+        if (distance > 62) skip();
+      }}
     >
       <View style={styles.header}>
-        <View style={styles.brandRow}>
-          <Text style={styles.brand}>Zagadaj</Text>
-          <View style={styles.brandDot} />
+        <View>
+          <Text style={styles.logo}>Zagadaj</Text>
+          <Text style={styles.deckLabel}>DECK · {scopeLabels[scope]}</Text>
         </View>
         <View style={styles.stats}>
-          <Stat value={`${streak} dni`} label="seria" />
-          <Stat value={`${xp}`} label="punkty" />
+          <Stat value={`${streak}d`} label="seria" />
+          <Stat value={`${xp}`} label="xp" />
         </View>
       </View>
-
-      <View style={styles.tabs} accessibilityRole="tablist">
-        {challengeScopes.map((item) => {
-          const active = item.key === scope;
-          return (
-            <Pressable
-              key={item.key}
-              onPress={() => changeScope(item.key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              hitSlop={8}
-              style={styles.tabPress}
-            >
-              <Text style={[styles.tab, active && styles.tabActive]}>{item.label}</Text>
-              <View style={[styles.tabLine, active && styles.tabLineActive]} />
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Animated.View
-        style={{
-          opacity: openerMotion,
-          transform: [{ translateY: openerMotion.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }],
-        }}
-      >
-        <Text style={styles.kicker}>{challenge.eyebrow}</Text>
-        <Text style={styles.title}>{challenge.title}</Text>
-        <Text style={styles.description}>
-          {challenge.description}{' '}
-          <Text style={styles.accent}>{challenge.accent}</Text>
-        </Text>
-
-        <View style={styles.opener}>
-          <Text style={styles.quote}>“</Text>
-          <Text style={styles.openerText}>{easier ? challenge.easier : challenge.opener}</Text>
-        </View>
-      </Animated.View>
-
-      <Text style={styles.support}>Nie chodzi o ideał. Wystarczy zacząć.</Text>
 
       <Pressable
+        onPress={handleCardPress}
         accessibilityRole="button"
-        accessibilityLabel={`Rozpocznij sesję: ${challenge.eyebrow}`}
-        onPress={() => onStart(scope)}
-        style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
+        accessibilityLabel={`Wyzwanie: ${challenge.opener}. Naciśnij dwa razy, aby przyjąć.`}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >
-        <Text style={styles.ctaText}>{started ? 'Ćwicz dalej' : 'Zaczynam'}</Text>
-        <Text style={styles.ctaMeta}>5 min  •  +{challenge.xp} XP</Text>
+        <View style={styles.cardTop}>
+          <Text style={styles.trial}>TRIAL № {String(index + 1).padStart(3, '0')} · TIER {tier}</Text>
+          <View style={styles.tierDot} />
+        </View>
+
+        <View style={styles.challengeCopy}>
+          <Text style={styles.eyebrow}>{challenge.eyebrow.toUpperCase()}</Text>
+          <Text style={styles.openWith}>„{challenge.opener}”</Text>
+          <Text style={styles.context}>{challenge.description} {challenge.accent}</Text>
+        </View>
+
+        <View style={styles.cardBottom}>
+          <Text style={styles.accept}>♡  DOUBLE TAP TO ACCEPT</Text>
+          <Text style={styles.skip}>↑  SWIPE UP TO SKIP</Text>
+        </View>
       </Pressable>
 
-      <Text style={styles.secondaryTitle}>Spróbuj też</Text>
-      <View style={styles.secondaryRow}>
-        <Pressable onPress={() => animateCopyChange(() => setEasier((value) => !value))} hitSlop={12} accessibilityRole="button">
-          <Text style={styles.secondaryAction}>{easier ? 'Mocniejsza wersja' : 'Prostsza wersja'}  →</Text>
+      <View style={styles.footerRow}>
+        <Pressable onPress={() => onStart(scope)} style={({ pressed }) => [styles.startButton, pressed && styles.pressed]}>
+          <Text style={styles.startText}>PRZYJMIJ WYZWANIE</Text>
         </Pressable>
-        <Pressable onPress={() => changeScope(scope === 'campus' ? 'city' : 'campus')} hitSlop={12} accessibilityRole="button">
-          <Text style={styles.secondaryAction}>{scope === 'campus' ? 'W mieście' : 'Na uczelni'}  →</Text>
+        <Pressable onPress={skip} hitSlop={12}>
+          <Text style={styles.nextText}>Następne →</Text>
         </Pressable>
       </View>
-
-      <View style={styles.divider} />
-      <Text style={styles.micro}>Mały krok &gt; perfekcyjny opener.</Text>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: spacing.page, paddingBottom: spacing.navHeight + 36 },
-  header: { marginTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  brandRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  brand: { color: colors.ink, fontFamily: fonts.bold, fontSize: 29, lineHeight: 38, letterSpacing: -0.8 },
-  brandDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.teal, marginLeft: 5, marginTop: 9 },
+  screen: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: spacing.page, paddingBottom: spacing.navHeight + 18 },
+  header: { height: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  logo: { color: colors.navy, fontFamily: fonts.bold, fontSize: 25, letterSpacing: -0.8 },
+  deckLabel: { color: colors.muted, fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginTop: 2 },
   stats: { flexDirection: 'row', gap: 2 },
-  tabs: { marginTop: 22, flexDirection: 'row', gap: 26 },
-  tabPress: { paddingBottom: 2 },
-  tab: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 14 },
-  tabActive: { color: colors.teal },
-  tabLine: { width: '100%', height: 2, borderRadius: 1, backgroundColor: 'transparent', marginTop: 10 },
-  tabLineActive: { backgroundColor: colors.teal },
-  kicker: { marginTop: 34, color: colors.muted, fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.7 },
-  title: { marginTop: 12, color: colors.ink, fontFamily: fonts.bold, fontSize: 36, lineHeight: 40, letterSpacing: -1.1 },
-  description: { marginTop: 17, color: colors.ink, fontFamily: fonts.regular, fontSize: 20, lineHeight: 29 },
-  accent: { color: colors.teal, fontFamily: fonts.bold },
-  opener: { marginTop: 34, minHeight: 96, flexDirection: 'row', alignItems: 'flex-start', paddingRight: 12 },
-  quote: { color: colors.teal, fontFamily: fonts.bold, fontSize: 42, lineHeight: 46, marginRight: 14, marginTop: -5 },
-  openerText: { flex: 1, color: colors.ink, fontFamily: fonts.semibold, fontSize: 21, lineHeight: 29, letterSpacing: -0.15 },
-  support: { marginTop: 10, color: colors.muted, fontFamily: fonts.regular, fontSize: 15 },
-  cta: { marginTop: 26, minHeight: 58, borderRadius: 14, backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center', paddingVertical: 9 },
-  ctaText: { color: colors.white, fontFamily: fonts.bold, fontSize: 18 },
-  ctaMeta: { color: 'rgba(255,255,255,0.8)', fontFamily: fonts.medium, fontSize: 11, marginTop: 2 },
-  pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
-  secondaryTitle: { marginTop: 36, color: colors.ink, fontFamily: fonts.bold, fontSize: 17 },
-  secondaryRow: { marginTop: 19, flexDirection: 'row', justifyContent: 'space-between' },
-  secondaryAction: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 16 },
-  divider: { marginTop: 22, height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
-  micro: { marginTop: 14, color: colors.muted, fontFamily: fonts.regular, fontSize: 13 },
+  card: { flex: 1, borderWidth: 2, borderColor: colors.navy, borderRadius: 34, paddingHorizontal: 27, paddingVertical: 26, justifyContent: 'space-between', backgroundColor: '#F2EDE5' },
+  cardPressed: { transform: [{ scale: 0.995 }], opacity: 0.93 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  trial: { color: colors.muted, fontFamily: fonts.bold, fontSize: 9, letterSpacing: 2.1 },
+  tierDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.rust },
+  challengeCopy: { marginTop: 12 },
+  eyebrow: { color: colors.rust, fontFamily: fonts.bold, fontSize: 10, letterSpacing: 1.3, marginBottom: 16 },
+  openWith: { color: colors.navy, fontFamily: serif, fontSize: 31, lineHeight: 41, letterSpacing: -0.3 },
+  context: { color: colors.muted, fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, marginTop: 20, maxWidth: 285 },
+  cardBottom: { alignItems: 'center', paddingBottom: 2 },
+  accept: { color: colors.muted, fontFamily: fonts.bold, fontSize: 8.5, letterSpacing: 1.7 },
+  skip: { color: colors.muted, fontFamily: fonts.bold, fontSize: 8.5, letterSpacing: 1.7, marginTop: 7 },
+  footerRow: { minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: 16 },
+  startButton: { flex: 1, height: 46, borderRadius: 13, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
+  startText: { color: colors.white, fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.7 },
+  nextText: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 12 },
+  pressed: { opacity: 0.7 },
 });
