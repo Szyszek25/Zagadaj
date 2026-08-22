@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../theme';
+import { fonts } from '../typography';
 
 type Reel = {
   id: string;
@@ -161,25 +162,25 @@ const styles = StyleSheet.create({
   personRight: { right: '9%' },
   counter: { position: 'absolute', left: 0, right: 0, top: '54%', height: '16%', opacity: 0.72 },
   topOverlay: { position: 'absolute', left: 20, right: 20 },
-  title: { color: colors.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.7 },
-  sub: { color: '#CCD1D1', fontSize: 12, marginTop: -2 },
+  title: { color: colors.white, fontFamily: fonts.bold, fontSize: 28, letterSpacing: -0.7 },
+  sub: { color: '#CCD1D1', fontFamily: fonts.regular, fontSize: 12, marginTop: -2 },
   filters: { marginTop: 18, flexDirection: 'row', gap: 30 },
-  filterActive: { color: colors.white, fontSize: 13, fontWeight: '700' },
-  filter: { color: '#B8BDBF', fontSize: 13, fontWeight: '600' },
+  filterActive: { color: colors.white, fontFamily: fonts.bold, fontSize: 13 },
+  filter: { color: '#B8BDBF', fontFamily: fonts.semibold, fontSize: 13 },
   filterLine: { marginTop: 10, width: 34, height: 3, borderRadius: 2, backgroundColor: colors.teal },
   play: { position: 'absolute', alignSelf: 'center', top: '41%', width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(8,9,9,0.5)', alignItems: 'center', justifyContent: 'center' },
-  playGlyph: { color: colors.white, fontSize: 24, marginLeft: 4 },
+  playGlyph: { color: colors.white, fontFamily: fonts.semibold, fontSize: 24, marginLeft: 4 },
   bottomCopy: { position: 'absolute', left: 20, right: 62 },
-  place: { color: '#D4DBDB', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  place: { color: '#D4DBDB', fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.5 },
   titleRow: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  reelTitle: { flex: 1, color: colors.white, fontSize: 28, lineHeight: 31, fontWeight: '800', letterSpacing: -0.7 },
-  duration: { color: colors.white, fontSize: 13, marginLeft: 8, marginBottom: 2 },
-  line: { color: colors.white, fontSize: 15, lineHeight: 21, marginTop: 12 },
-  author: { color: '#CCD1D1', fontSize: 12, fontWeight: '600', marginTop: 20 },
-  swipe: { color: '#A8B0B0', fontSize: 11, marginTop: 24 },
+  reelTitle: { flex: 1, color: colors.white, fontFamily: fonts.bold, fontSize: 28, lineHeight: 31, letterSpacing: -0.7 },
+  duration: { color: colors.white, fontFamily: fonts.medium, fontSize: 13, marginLeft: 8, marginBottom: 2 },
+  line: { color: colors.white, fontFamily: fonts.regular, fontSize: 15, lineHeight: 21, marginTop: 12 },
+  author: { color: '#CCD1D1', fontFamily: fonts.semibold, fontSize: 12, marginTop: 20 },
+  swipe: { color: '#A8B0B0', fontFamily: fonts.regular, fontSize: 11, marginTop: 24 },
   actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 20 },
   action: { alignItems: 'center', minWidth: 42 },
-  actionGlyph: { color: colors.white, fontSize: 24, fontWeight: '800' },
-  actionCount: { color: colors.white, fontSize: 10, fontWeight: '600', marginTop: 3 },
+  actionGlyph: { color: colors.white, fontFamily: fonts.bold, fontSize: 24 },
+  actionCount: { color: colors.white, fontFamily: fonts.semibold, fontSize: 10, marginTop: 3 },
   pressed: { opacity: 0.65, transform: [{ scale: 0.96 }] },
 });
