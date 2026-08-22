@@ -41,6 +41,8 @@ const snack = new Snack({
   sdkVersion: '57.0.0',
   files,
   dependencies: {
+    '@react-native-async-storage/async-storage': { version: '2.2.0' },
+    'expo-haptics': { version: '~57.0.1' },
     'expo-router': { version: '~57.0.13' },
     'expo-status-bar': { version: '~57.0.1' },
     'react-native-safe-area-context': { version: '~5.7.0' },
