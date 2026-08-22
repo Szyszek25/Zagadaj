@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { enableFreeze } from 'react-native-screens';
+import { AppErrorBoundary } from '../src/components/AppErrorBoundary';
 import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
 import { ZagadajSessionProvider, useZagadajSession } from '../src/contexts/ZagadajSessionContext';
 import { colors } from '../src/theme';
@@ -62,13 +63,15 @@ function AppNavigator() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <AuthProvider>
-        <ZagadajSessionProvider>
-          <View style={styles.root}>
-            <AppNavigator />
-          </View>
-        </ZagadajSessionProvider>
-      </AuthProvider>
+      <AppErrorBoundary>
+        <AuthProvider>
+          <ZagadajSessionProvider>
+            <View style={styles.root}>
+              <AppNavigator />
+            </View>
+          </ZagadajSessionProvider>
+        </AuthProvider>
+      </AppErrorBoundary>
     </SafeAreaProvider>
   );
 }

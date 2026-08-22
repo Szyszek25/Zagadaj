@@ -1,21 +1,35 @@
-# Zagadaj — Expo SDK 57
+# Zagadaj
 
-Mobilny prototyp **Zagadaj** działający w Expo Go i zorganizowany jak normalna aplikacja Expo Router.
+Mobilna aplikacja do ćwiczenia rozpoczynania i podtrzymywania rozmów. Projekt działa na **Expo SDK 54** i jest przygotowany pod Expo Go / Expo Snack.
 
-## Uruchomienie
+## Główny flow
 
-```bash
-npm install
-npx expo start
+```text
+start
+  -> login
+  -> onboarding (6 kroków)
+  -> Dziś / Na uczelni / W mieście
+  -> 5-minutowa sesja z pytaniami
+  -> wynik + XP
+  -> Postęp
 ```
 
-Następnie zeskanuj QR w Expo Go.
+Dolne zakładki:
+
+- **Dziś** — działające konteksty i wyzwania, nie statyczne taby
+- **Rolki** — `CardVideo`, filtry, aktywny player, like/save
+- **Coach** — lokalny conversational coach z szybkimi wariantami
+- **Postęp** — XP, seria, liczba sesji, minuty ćwiczeń i konto
 
 ## Architektura
 
 ```text
 app/
   _layout.tsx
+  index.tsx
+  login.tsx
+  onboarding.tsx
+  practice-session.tsx
   (tabs)/
     _layout.tsx
     index.tsx
@@ -23,25 +37,68 @@ app/
     coach.tsx
     progress.tsx
 src/
+  components/
+    AppErrorBoundary.tsx
+    CardVideo.tsx
+    Stat.tsx
   contexts/
+    AuthContext.tsx
+    ZagadajSessionContext.tsx
+  domain/
+    challenges.ts
+    onboarding.ts
+    practiceSession.ts
   screens/
   theme.ts
   typography.ts
+tests/
 ```
 
-- `app/_layout.tsx` — root `Stack`, `SafeAreaProvider`, globalne providery
-- `app/(tabs)/_layout.tsx` — bottom tabs i `animation: 'shift'`
-- ekrany korzystają z `SafeAreaView` / `useSafeAreaInsets`
-- Rolki są edge-to-edge i uwzględniają notch oraz dolny inset
-- wspólny stan XP/serii jest w `ZagadajSessionProvider`
+## System aplikacji
 
-## Stack
+- Expo Router + root Stack + bottom Tabs
+- `SafeAreaProvider` / `SafeAreaView` / `useSafeAreaInsets`
+- `animation: 'shift'` dla tabów
+- splash czeka na hydration stanu
+- AsyncStorage zapisuje onboarding, konto demo, XP i metryki ćwiczeń
+- minutnik jest deadline-based (`Date.now()`), więc nie dryfuje po backgroundzie
+- `CardVideo` zatrzymuje wideo po utracie focusu i ogranicza liczbę playerów
+- globalny error boundary zamiast pustego ekranu po błędzie renderowania
 
-- Expo SDK 57
-- React Native 0.86
-- React 19.2
-- Expo Router 57
-- TypeScript
-- react-native-safe-area-context
+## Auth
 
-Typografia jest przygotowana pod API Proxima Nova używane w MyCampus. Dopóki pliki fontów nie są skopiowane do tego repo, używany jest bezpieczny systemowy fallback, aby projekt nadal uruchamiał się w Expo Go.
+Obecny auth jest **lokalnym adapterem produktowym** do testowania pełnego flow w Expo Snack/Expo Go. Przyciski Google/Apple pokazują docelowy UX, ale nie używają poświadczeń ani backendu MyCampus. Dzięki temu repo nie kopiuje sekretów ani kont użytkowników z innego produktu.
+
+Warstwa `AuthContext` jest odseparowana od UI, więc można podmienić implementację na Supabase/OAuth bez przebudowy onboardingu i routingu.
+
+## Testy
+
+```bash
+npm install
+npm test
+npm run typecheck
+npm run doctor
+```
+
+Testy obejmują m.in.:
+
+- minutnik i deadline po backgroundzie,
+- pause/resume i zakończenie sesji,
+- rotację pytań,
+- naliczanie XP,
+- kompletność banku wyzwań,
+- limity i walidację onboardingu,
+- regresję architektury Router/SafeArea/Auth/CardVideo,
+- kompletność plików publikowanych do Snacka.
+
+## Expo Snack
+
+```bash
+npm run snack:publish
+```
+
+Publisher zapisuje wieloplikowy projekt SDK 54 i generuje `SNACK_URL.txt`. GitHub Actions po udanej walidacji dodaje też status **Expo Snack** do commita.
+
+## Typografia
+
+API typografii jest przygotowane pod rodziny Proxima Nova używane w MyCampus. Binaria fontu nie są jeszcze kopiowane automatycznie między repozytoriami; do czasu dołączenia assetów działa bezpieczny systemowy fallback.

@@ -17,6 +17,25 @@ export function createPracticeSnapshot(durationSeconds: number): PracticeSnapsho
   };
 }
 
+export function createPracticeDeadline(nowMs: number, remainingSeconds: number): number {
+  return nowMs + Math.max(0, remainingSeconds) * 1000;
+}
+
+export function remainingSecondsAt(deadlineMs: number, nowMs: number): number {
+  return Math.max(0, Math.ceil((deadlineMs - nowMs) / 1000));
+}
+
+export function syncPracticeToDeadline(snapshot: PracticeSnapshot, deadlineMs: number, nowMs: number): PracticeSnapshot {
+  if (snapshot.status !== 'running') return snapshot;
+  const remainingSeconds = remainingSecondsAt(deadlineMs, nowMs);
+  if (remainingSeconds === snapshot.remainingSeconds) return snapshot;
+  return {
+    ...snapshot,
+    remainingSeconds,
+    status: remainingSeconds === 0 ? 'finished' : 'running',
+  };
+}
+
 export function tickPractice(snapshot: PracticeSnapshot): PracticeSnapshot {
   if (snapshot.status !== 'running') return snapshot;
   const remainingSeconds = Math.max(0, snapshot.remainingSeconds - 1);
@@ -27,11 +46,11 @@ export function tickPractice(snapshot: PracticeSnapshot): PracticeSnapshot {
   };
 }
 
-export function advanceQuestion(snapshot: PracticeSnapshot, questionCount: number): PracticeSnapshot {
+export function advanceQuestion(snapshot: PracticeSnapshot, questionCount: number, steps = 1): PracticeSnapshot {
   if (questionCount <= 0) return snapshot;
   return {
     ...snapshot,
-    questionIndex: (snapshot.questionIndex + 1) % questionCount,
+    questionIndex: (snapshot.questionIndex + Math.max(1, Math.floor(steps))) % questionCount,
   };
 }
 
@@ -53,6 +72,10 @@ export function formatPracticeClock(seconds: number): string {
 export function practiceProgress(snapshot: PracticeSnapshot): number {
   if (snapshot.durationSeconds <= 0) return 1;
   return Math.min(1, Math.max(0, 1 - snapshot.remainingSeconds / snapshot.durationSeconds));
+}
+
+export function elapsedPracticeMinute(snapshot: PracticeSnapshot): number {
+  return Math.max(0, Math.floor((snapshot.durationSeconds - snapshot.remainingSeconds) / 60));
 }
 
 export function practiceRewardForSeconds(fullRewardXp: number, secondsSpent: number): number {

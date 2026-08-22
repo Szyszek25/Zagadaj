@@ -2,18 +2,20 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useZagadajSession } from '../contexts/ZagadajSessionContext';
 import { getChallenge, type ChallengeScope } from '../domain/challenges';
 import {
   advanceQuestion,
+  createPracticeDeadline,
   createPracticeSnapshot,
+  elapsedPracticeMinute,
   formatPracticeClock,
   practiceProgress,
   practiceRewardForSeconds,
   previousQuestion,
-  tickPractice,
+  syncPracticeToDeadline,
   type PracticeSnapshot,
 } from '../domain/practiceSession';
 import { colors } from '../theme';
@@ -37,6 +39,8 @@ export function PracticeSessionScreen() {
   }));
   const [earnedXp, setEarnedXp] = useState<number | null>(null);
   const rewardedRef = useRef(false);
+  const deadlineRef = useRef(createPracticeDeadline(Date.now(), challenge.durationSeconds));
+  const lastAutoMinuteRef = useRef(0);
 
   const recordCompletion = (secondsSpent: number) => {
     if (rewardedRef.current) return earnedXp ?? 0;
@@ -50,20 +54,35 @@ export function PracticeSessionScreen() {
     return reward;
   };
 
+  const synchronizeClock = () => {
+    if (snapshot.status !== 'running') return;
+    setSnapshot((current) => syncPracticeToDeadline(current, deadlineRef.current, Date.now()));
+  };
+
   useEffect(() => {
     if (snapshot.status !== 'running') return;
-    const id = setInterval(() => setSnapshot((current) => tickPractice(current)), 1000);
+    const id = setInterval(() => {
+      setSnapshot((current) => syncPracticeToDeadline(current, deadlineRef.current, Date.now()));
+    }, 250);
     return () => clearInterval(id);
   }, [snapshot.status]);
 
   useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') synchronizeClock();
+    });
+    return () => subscription.remove();
+  }, [snapshot.status]);
+
+  useEffect(() => {
     if (snapshot.status !== 'running') return;
-    if (snapshot.remainingSeconds === challenge.durationSeconds) return;
-    if (snapshot.remainingSeconds > 0 && snapshot.remainingSeconds % 60 === 0) {
-      setSnapshot((current) => advanceQuestion(current, challenge.questions.length));
-      void Haptics.selectionAsync().catch(() => {});
-    }
-  }, [challenge.durationSeconds, challenge.questions.length, snapshot.remainingSeconds, snapshot.status]);
+    const elapsedMinute = elapsedPracticeMinute(snapshot);
+    if (elapsedMinute <= lastAutoMinuteRef.current) return;
+    const steps = elapsedMinute - lastAutoMinuteRef.current;
+    lastAutoMinuteRef.current = elapsedMinute;
+    setSnapshot((current) => advanceQuestion(current, challenge.questions.length, steps));
+    void Haptics.selectionAsync().catch(() => {});
+  }, [challenge.questions.length, snapshot.remainingSeconds, snapshot.status]);
 
   useEffect(() => {
     if (snapshot.status !== 'finished' || rewardedRef.current) return;
@@ -72,16 +91,24 @@ export function PracticeSessionScreen() {
   }, [challenge.durationSeconds, snapshot.status]);
 
   const finishEarly = () => {
+    synchronizeClock();
     const secondsSpent = challenge.durationSeconds - snapshot.remainingSeconds;
     recordCompletion(secondsSpent);
     router.back();
   };
 
   const togglePause = () => {
-    setSnapshot((current) => ({
-      ...current,
-      status: current.status === 'running' ? 'paused' : current.status === 'paused' ? 'running' : current.status,
-    }));
+    setSnapshot((current) => {
+      if (current.status === 'running') {
+        const synced = syncPracticeToDeadline(current, deadlineRef.current, Date.now());
+        return { ...synced, status: synced.remainingSeconds === 0 ? 'finished' : 'paused' };
+      }
+      if (current.status === 'paused') {
+        deadlineRef.current = createPracticeDeadline(Date.now(), current.remainingSeconds);
+        return { ...current, status: 'running' };
+      }
+      return current;
+    });
     void Haptics.selectionAsync().catch(() => {});
   };
 

@@ -15,6 +15,7 @@ const projectFiles = [
   'app/(tabs)/reels.tsx',
   'app/(tabs)/coach.tsx',
   'app/(tabs)/progress.tsx',
+  'src/components/AppErrorBoundary.tsx',
   'src/components/CardVideo.tsx',
   'src/components/Stat.tsx',
   'src/contexts/AuthContext.tsx',
@@ -49,7 +50,7 @@ for (const file of projectFiles) {
 
 const snack = new Snack({
   name: 'Zagadaj — product flow',
-  description: 'Expo Router SDK 54: login, onboarding, functional tabs, timer questions, CardVideo, Coach and progress.',
+  description: 'Expo Router SDK 54: login, onboarding, functional tabs, robust timer questions, CardVideo, Coach and progress.',
   sdkVersion: '54.0.0',
   files,
   dependencies: {
