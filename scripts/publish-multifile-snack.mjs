@@ -12,11 +12,14 @@ const projectFiles = [
   'app/_layout.tsx',
   'app/(tabs)/_layout.tsx',
   'app/(tabs)/index.tsx',
-  'app/(tabs)/reels.tsx',
-  'app/(tabs)/coach.tsx',
   'app/(tabs)/progress.tsx',
+  'app/(tabs)/spots.tsx',
+  'app/(tabs)/learn.tsx',
+  'app/(tabs)/coach.tsx',
+  'app/(tabs)/reels.tsx',
   'src/components/AppErrorBoundary.tsx',
   'src/components/CardVideo.tsx',
+  'src/components/GardenScene.tsx',
   'src/components/Stat.tsx',
   'src/contexts/AuthContext.tsx',
   'src/contexts/ZagadajSessionContext.tsx',
@@ -27,9 +30,11 @@ const projectFiles = [
   'src/screens/OnboardingScreen.tsx',
   'src/screens/PracticeSessionScreen.tsx',
   'src/screens/TodayScreen.tsx',
-  'src/screens/ReelsScreen.tsx',
-  'src/screens/CoachScreen.tsx',
   'src/screens/ProgressScreen.tsx',
+  'src/screens/VibeMapScreen.tsx',
+  'src/screens/LearnScreen.tsx',
+  'src/screens/CoachScreen.tsx',
+  'src/screens/ReelsScreen.tsx',
   'src/theme.ts',
   'src/typography.ts',
 ];
@@ -49,8 +54,8 @@ for (const file of projectFiles) {
 }
 
 const snack = new Snack({
-  name: 'Zagadaj — product flow',
-  description: 'Expo Router SDK 54: login, onboarding, functional tabs, robust timer questions, CardVideo, Coach and progress.',
+  name: 'Zagadaj — confidence training product',
+  description: 'Expo Router SDK 54: auth, onboarding, challenge Deck, active approach timer, growing Garden, privacy-safe Vibe Map, Learn curriculum and Coach.',
   sdkVersion: '54.0.0',
   files,
   dependencies: {
