@@ -12,9 +12,7 @@ import {
   createPracticeSnapshot,
   elapsedPracticeMinute,
   formatPracticeClock,
-  practiceProgress,
   practiceRewardForSeconds,
-  previousQuestion,
   syncPracticeToDeadline,
   type PracticeSnapshot,
 } from '../domain/practiceSession';
@@ -90,10 +88,15 @@ export function PracticeSessionScreen() {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   }, [challenge.durationSeconds, snapshot.status]);
 
-  const finishEarly = () => {
-    synchronizeClock();
-    const secondsSpent = challenge.durationSeconds - snapshot.remainingSeconds;
+  const markComplete = () => {
+    const secondsSpent = Math.max(20, challenge.durationSeconds - snapshot.remainingSeconds);
     recordCompletion(secondsSpent);
+    setSnapshot((current) => ({ ...current, status: 'finished' }));
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  };
+
+  const giveUp = () => {
+    void Haptics.selectionAsync().catch(() => {});
     router.back();
   };
 
@@ -112,7 +115,6 @@ export function PracticeSessionScreen() {
     void Haptics.selectionAsync().catch(() => {});
   };
 
-  const progress = practiceProgress(snapshot);
   const currentQuestion = challenge.questions[snapshot.questionIndex] ?? challenge.questions[0];
   const predictedReward = practiceRewardForSeconds(challenge.xp, challenge.durationSeconds - snapshot.remainingSeconds);
 
@@ -123,22 +125,16 @@ export function PracticeSessionScreen() {
           <View style={styles.completeIcon}>
             <Ionicons name="checkmark" size={34} color={colors.white} />
           </View>
-          <Text style={styles.completeKicker}>SESJA UKOŃCZONA</Text>
-          <Text style={styles.completeTitle}>Dobra robota.{`\n`}To było 5 minut praktyki.</Text>
+          <Text style={styles.completeKicker}>APPROACH COMPLETE</Text>
+          <Text style={styles.completeTitle}>To się liczy.{`\n`}Nie reakcja drugiej osoby.</Text>
           <Text style={styles.completeXp}>+{earnedXp ?? challenge.xp} XP</Text>
-          <Text style={styles.completeBody}>
-            Przeszedłeś przez {Math.min(challenge.questions.length, snapshot.questionIndex + 1)} tematów. Następnym razem zacznij od tego, który brzmiał najbardziej naturalnie.
-          </Text>
-          <Pressable
-            onPress={() => router.replace('/(tabs)/progress')}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.completeCta, pressed && styles.pressed]}
-          >
-            <Text style={styles.completeCtaText}>Zobacz postęp</Text>
+          <Text style={styles.completeBody}>Każde podejście rozbudowuje Twój Garden i odblokowuje kolejne lekcje.</Text>
+          <Pressable onPress={() => router.replace('/(tabs)/progress')} style={({ pressed }) => [styles.completeCta, pressed && styles.pressed]}>
+            <Text style={styles.completeCtaText}>Zobacz Garden</Text>
             <Ionicons name="arrow-forward" size={20} color={colors.white} />
           </Pressable>
           <Pressable onPress={() => router.replace('/(tabs)')} hitSlop={10}>
-            <Text style={styles.completeSecondary}>Wróć na Dziś</Text>
+            <Text style={styles.completeSecondary}>Wróć do Decku</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -147,111 +143,73 @@ export function PracticeSessionScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={styles.header}>
-        <Pressable onPress={finishEarly} hitSlop={12} accessibilityRole="button" accessibilityLabel="Zamknij sesję" style={styles.iconButton}>
-          <Ionicons name="close" size={26} color={colors.ink} />
-        </Pressable>
-        <View style={styles.headerCenter}>
-          <Text style={styles.eyebrow}>{challenge.eyebrow}</Text>
-          <Text style={styles.headerTitle}>Sesja rozmowy</Text>
+      <View style={styles.top}>
+        <View style={styles.header}>
+          <Pressable onPress={giveUp} hitSlop={12} style={styles.iconButton}>
+            <Ionicons name="chevron-back" size={25} color={colors.navy} />
+          </Pressable>
+          <Text style={styles.headerLabel}>ACTIVE CHALLENGE</Text>
+          <Pressable onPress={togglePause} hitSlop={12} style={styles.iconButton}>
+            <Ionicons name={snapshot.status === 'paused' ? 'play' : 'pause'} size={21} color={colors.navy} />
+          </Pressable>
         </View>
-        <Pressable onPress={togglePause} hitSlop={12} accessibilityRole="button" accessibilityLabel={snapshot.status === 'paused' ? 'Wznów' : 'Pauza'} style={styles.iconButton}>
-          <Ionicons name={snapshot.status === 'paused' ? 'play' : 'pause'} size={23} color={colors.ink} />
-        </Pressable>
+
+        <View style={styles.promptWrap}>
+          <Text style={styles.challengeLine}>„{challenge.opener}”</Text>
+          <Text style={styles.questionLabel}>JEŚLI ROZMOWA RUSZY</Text>
+          <Text style={styles.question}>{currentQuestion}</Text>
+          <Pressable
+            onPress={() => setSnapshot((current) => advanceQuestion(current, challenge.questions.length))}
+            hitSlop={10}
+          >
+            <Text style={styles.nextQuestion}>Następne pytanie →</Text>
+          </Pressable>
+        </View>
       </View>
 
-      <View style={styles.timerBlock}>
+      <View style={styles.timerStage}>
         <Text style={styles.timer}>{formatPracticeClock(snapshot.remainingSeconds)}</Text>
-        <Text style={styles.timerCaption}>{snapshot.status === 'paused' ? 'pauza' : 'zostało'}</Text>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${Math.max(2, progress * 100)}%` }]} />
+        <Text style={styles.status}>{snapshot.status === 'paused' ? 'PAUZA' : `W RUCHU · ${predictedReward}/${challenge.xp} XP`}</Text>
+
+        <View style={styles.actions}>
+          <Pressable onPress={markComplete} style={({ pressed }) => [styles.completeButton, pressed && styles.pressed]}>
+            <Text style={styles.completeButtonText}>OZNACZ JAKO ZROBIONE</Text>
+          </Pressable>
+          <Pressable onPress={giveUp} hitSlop={12}>
+            <Text style={styles.giveUp}>PODDAJĘ SIĘ</Text>
+          </Pressable>
         </View>
       </View>
-
-      <View style={styles.questionBlock}>
-        <View style={styles.questionMetaRow}>
-          <Text style={styles.questionMeta}>PYTANIE {snapshot.questionIndex + 1}/{challenge.questions.length}</Text>
-          <Text style={styles.autoLabel}>zmiana co ~1 min</Text>
-        </View>
-        <Text style={styles.question}>{currentQuestion}</Text>
-        <Text style={styles.tip}>Nie musisz czytać tego słowo w słowo. Potraktuj pytanie jak kierunek rozmowy.</Text>
-      </View>
-
-      <View style={styles.rewardHint}>
-        <Ionicons name="flash-outline" size={15} color={colors.teal} />
-        <Text style={styles.rewardHintText}>{predictedReward > 0 ? `Masz już ${predictedReward} XP z tej sesji` : `Pełna sesja: +${challenge.xp} XP`}</Text>
-      </View>
-
-      <View style={styles.controls}>
-        <Pressable
-          onPress={() => {
-            setSnapshot((current) => previousQuestion(current, challenge.questions.length));
-            void Haptics.selectionAsync().catch(() => {});
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Poprzednie pytanie"
-          style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.ink} />
-          <Text style={styles.secondaryText}>Wstecz</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => {
-            setSnapshot((current) => advanceQuestion(current, challenge.questions.length));
-            void Haptics.selectionAsync().catch(() => {});
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Następne pytanie"
-          style={({ pressed }) => [styles.nextButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.nextText}>Następne</Text>
-          <Ionicons name="arrow-forward" size={21} color={colors.white} />
-        </Pressable>
-      </View>
-
-      <Pressable onPress={finishEarly} style={styles.finishLink} hitSlop={10}>
-        <Text style={styles.finishText}>Zakończ wcześniej</Text>
-      </Pressable>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
+  safe: { flex: 1, backgroundColor: colors.bg },
+  top: { flex: 1.04, paddingHorizontal: 20 },
   header: { height: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  headerCenter: { alignItems: 'center' },
-  eyebrow: { color: colors.teal, fontFamily: fonts.bold, fontSize: 9, letterSpacing: 0.8 },
-  headerTitle: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 15, marginTop: 2 },
-  timerBlock: { alignItems: 'center', paddingTop: 38 },
-  timer: { color: colors.ink, fontFamily: fonts.bold, fontSize: 58, lineHeight: 62, letterSpacing: -2.2, fontVariant: ['tabular-nums'] },
-  timerCaption: { color: colors.muted, fontFamily: fonts.medium, fontSize: 13, marginTop: 3 },
-  progressTrack: { width: '100%', height: 5, borderRadius: 3, backgroundColor: colors.line, overflow: 'hidden', marginTop: 24 },
-  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.teal },
-  questionBlock: { flex: 1, justifyContent: 'center', paddingVertical: 24 },
-  questionMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  questionMeta: { color: colors.teal, fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.65 },
-  autoLabel: { color: colors.muted, fontFamily: fonts.regular, fontSize: 11 },
-  question: { color: colors.ink, fontFamily: fonts.bold, fontSize: 34, lineHeight: 39, letterSpacing: -0.9 },
-  tip: { color: colors.muted, fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, marginTop: 20, maxWidth: 330 },
-  rewardHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 12 },
-  rewardHintText: { color: colors.muted, fontFamily: fonts.medium, fontSize: 11 },
-  controls: { flexDirection: 'row', gap: 10 },
-  secondaryButton: { flex: 0.78, height: 54, borderRadius: 14, backgroundColor: colors.soft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
-  secondaryText: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 15 },
-  nextButton: { flex: 1.22, height: 54, borderRadius: 14, backgroundColor: colors.teal, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  nextText: { color: colors.white, fontFamily: fonts.bold, fontSize: 16 },
-  finishLink: { alignItems: 'center', paddingVertical: 16 },
-  finishText: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 13, textDecorationLine: 'underline' },
-  completeWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
-  completeIcon: { width: 68, height: 68, borderRadius: 34, backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-  completeKicker: { color: colors.teal, fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.8 },
-  completeTitle: { color: colors.ink, fontFamily: fonts.bold, fontSize: 34, lineHeight: 39, textAlign: 'center', letterSpacing: -1, marginTop: 10 },
-  completeXp: { color: colors.teal, fontFamily: fonts.bold, fontSize: 26, marginTop: 20 },
-  completeBody: { color: colors.muted, fontFamily: fonts.regular, fontSize: 15, lineHeight: 21, textAlign: 'center', marginTop: 13, maxWidth: 330 },
-  completeCta: { marginTop: 34, width: '100%', height: 56, borderRadius: 14, backgroundColor: colors.teal, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  completeCtaText: { color: colors.white, fontFamily: fonts.bold, fontSize: 17 },
-  completeSecondary: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 18, textDecorationLine: 'underline' },
-  pressed: { opacity: 0.7, transform: [{ scale: 0.99 }] },
+  headerLabel: { color: colors.muted, fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.3 },
+  promptWrap: { flex: 1, justifyContent: 'center', paddingHorizontal: 12, paddingBottom: 22 },
+  challengeLine: { color: colors.navy, fontFamily: fonts.semibold, fontSize: 27, lineHeight: 35, textAlign: 'center', letterSpacing: -0.5 },
+  questionLabel: { color: colors.rust, fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.2, textAlign: 'center', marginTop: 30 },
+  question: { color: colors.muted, fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8, paddingHorizontal: 14 },
+  nextQuestion: { color: colors.navy, fontFamily: fonts.semibold, fontSize: 11, textAlign: 'center', marginTop: 13 },
+  timerStage: { flex: 0.96, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'space-between', paddingTop: 18, paddingBottom: 24, paddingHorizontal: 20, borderTopLeftRadius: 42, borderTopRightRadius: 42 },
+  timer: { color: colors.bg, fontFamily: fonts.bold, fontSize: 104, lineHeight: 120, letterSpacing: -5, fontVariant: ['tabular-nums'], marginTop: -42 },
+  status: { color: 'rgba(246,240,228,0.62)', fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.25, marginTop: -14 },
+  actions: { width: '100%', alignItems: 'center', gap: 18 },
+  completeButton: { width: '100%', height: 56, borderRadius: 4, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+  completeButtonText: { color: colors.navy, fontFamily: fonts.bold, fontSize: 12, letterSpacing: 0.65 },
+  giveUp: { color: 'rgba(246,240,228,0.72)', fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.8 },
+  completeWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28, backgroundColor: colors.bg },
+  completeIcon: { width: 68, height: 68, borderRadius: 34, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  completeKicker: { color: colors.rust, fontFamily: fonts.bold, fontSize: 10, letterSpacing: 1.2 },
+  completeTitle: { color: colors.navy, fontFamily: fonts.bold, fontSize: 35, lineHeight: 39, textAlign: 'center', letterSpacing: -1, marginTop: 10 },
+  completeXp: { color: colors.rust, fontFamily: fonts.bold, fontSize: 27, marginTop: 20 },
+  completeBody: { color: colors.muted, fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 12, maxWidth: 320 },
+  completeCta: { marginTop: 32, width: '100%', height: 56, borderRadius: 14, backgroundColor: colors.navy, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  completeCtaText: { color: colors.white, fontFamily: fonts.bold, fontSize: 16 },
+  completeSecondary: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 13, marginTop: 18 },
+  pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
 });
