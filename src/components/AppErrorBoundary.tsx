@@ -14,11 +14,13 @@ export class AppErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    if (__DEV__) console.error('[Zagadaj] render error', error, info.componentStack);
+    console.error('[Zagadaj] render error', error, info.componentStack);
   }
 
   render() {
     if (!this.state.error) return this.props.children;
+
+    const message = this.state.error?.message || 'unknown_error';
 
     return (
       <View style={styles.screen}>
@@ -32,7 +34,7 @@ export class AppErrorBoundary extends React.Component<Props, State> {
         >
           <Text style={styles.buttonText}>Spróbuj ponownie</Text>
         </Pressable>
-        {__DEV__ ? <Text style={styles.dev}>{this.state.error.message}</Text> : null}
+        <Text selectable style={styles.code}>Kod błędu: {message.slice(0, 220)}</Text>
       </View>
     );
   }
@@ -45,6 +47,6 @@ const styles = StyleSheet.create({
   body: { color: colors.muted, fontFamily: fonts.regular, fontSize: 15, lineHeight: 22, marginTop: 14 },
   button: { height: 54, borderRadius: 14, backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center', marginTop: 28 },
   buttonText: { color: colors.white, fontFamily: fonts.bold, fontSize: 16 },
-  dev: { color: colors.muted, fontFamily: fonts.regular, fontSize: 11, marginTop: 18 },
+  code: { color: colors.muted, fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, marginTop: 18 },
   pressed: { opacity: 0.7 },
 });
