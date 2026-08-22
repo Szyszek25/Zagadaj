@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, spacing } from '../theme';
 import { fonts } from '../typography';
@@ -23,6 +23,8 @@ export function CoachScreen() {
   const [messages, setMessages] = useState<Message[]>(starter);
   const [input, setInput] = useState('');
   const [scenario, setScenario] = useState('ona stoi sama w kolejce po kawę');
+  const scrollRef = useRef<ScrollView>(null);
+  const shouldAutoScrollRef = useRef(false);
 
   const nextReply = useMemo(() => replies[messages.length % replies.length], [messages.length]);
 
@@ -30,6 +32,7 @@ export function CoachScreen() {
     const trimmed = input.trim();
     if (!trimmed) return;
     const base = Date.now();
+    shouldAutoScrollRef.current = true;
     setMessages((old) => [
       ...old,
       { id: base, side: 'user', text: trimmed },
@@ -46,6 +49,12 @@ export function CoachScreen() {
     void Haptics.selectionAsync().catch(() => {});
   };
 
+  const handleContentSizeChange = () => {
+    if (!shouldAutoScrollRef.current) return;
+    shouldAutoScrollRef.current = false;
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -53,14 +62,19 @@ export function CoachScreen() {
       keyboardVerticalOffset={18}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Coach</Text>
-        <View style={styles.live}>
+        <Text style={styles.title} accessibilityRole="header">Coach</Text>
+        <View style={styles.live} accessibilityLabel="Coach dostępny na żywo">
           <View style={styles.liveDot} />
           <Text style={styles.liveText}>Na żywo</Text>
         </View>
       </View>
 
-      <Pressable onPress={toggleScenario} style={({ pressed }) => [styles.scenario, pressed && styles.pressed]}>
+      <Pressable
+        onPress={toggleScenario}
+        style={({ pressed }) => [styles.scenario, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel={`Zmień sytuację. Obecnie: ${scenario}`}
+      >
         <View style={styles.scenarioCopy}>
           <Text style={styles.scenarioLabel}>Sytuacja</Text>
           <Text numberOfLines={1} style={styles.scenarioValue}>{scenario}</Text>
@@ -69,15 +83,23 @@ export function CoachScreen() {
       </Pressable>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.messages}
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        onContentSizeChange={handleContentSizeChange}
       >
         {messages.map((message) => (
-          <View key={message.id} style={[styles.messageRow, message.side === 'user' ? styles.right : styles.left]}>
+          <View
+            key={message.id}
+            style={[styles.messageRow, message.side === 'user' ? styles.right : styles.left]}
+            accessible
+            accessibilityLabel={`${message.side === 'user' ? 'Ty' : 'Coach'}: ${message.text}`}
+          >
             {message.side === 'coach' && (
-              <View style={styles.avatar}>
+              <View style={styles.avatar} importantForAccessibility="no-hide-descendants">
                 <Text style={styles.avatarText}>{message.suggestion ? '✦' : '•ᴗ•'}</Text>
               </View>
             )}
@@ -105,6 +127,8 @@ export function CoachScreen() {
               if (index === 2) setInput('Co powiedzieć po pierwszym zdaniu?');
             }}
             style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={item}
           >
             <Text style={styles.quickText}>{item}</Text>
           </Pressable>
@@ -120,8 +144,15 @@ export function CoachScreen() {
           placeholderTextColor={colors.muted}
           style={styles.input}
           returnKeyType="send"
+          accessibilityLabel="Opisz sytuację Coachowi"
         />
-        <Pressable onPress={send} style={({ pressed }) => [styles.send, pressed && styles.pressed]}>
+        <Pressable
+          onPress={send}
+          style={({ pressed }) => [styles.send, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Wyślij wiadomość"
+          hitSlop={6}
+        >
           <Text style={styles.sendText}>↑</Text>
         </Pressable>
       </View>
@@ -162,7 +193,7 @@ const styles = StyleSheet.create({
   suggestionBubble: { maxWidth: '82%', backgroundColor: '#FFFFFF' },
   messageText: { color: colors.ink, fontFamily: fonts.regular, fontSize: 16, lineHeight: 22 },
   quickRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  quick: { flex: 1, minHeight: 36, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, paddingVertical: 8 },
+  quick: { flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, paddingVertical: 8 },
   quickText: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 11.5, textAlign: 'center' },
   inputRow: { minHeight: 56, borderRadius: 14, backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 7 },
   input: { flex: 1, color: colors.ink, fontFamily: fonts.regular, fontSize: 15, paddingVertical: 0 },
