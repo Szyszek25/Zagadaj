@@ -40,13 +40,7 @@ export default function TabsLayout() {
             marginTop: 4,
           },
           tabBarIcon: ({ color, focused }) => (
-            <Text
-              style={[
-                styles.icon,
-                { color },
-                focused && styles.iconFocused,
-              ]}
-            >
+            <Text style={{ color, fontFamily: fonts.bold, fontSize: focused ? 19 : 18 }}>
               {icons[route.name] ?? '•'}
             </Text>
           ),
@@ -77,15 +71,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  icon: {
-    fontFamily: fonts.bold,
-    fontSize: 18,
-    lineHeight: 22,
-    transform: [{ scale: 0.96 }],
-  },
-  iconFocused: {
-    transform: [{ scale: 1.06 }],
-  },
-});
