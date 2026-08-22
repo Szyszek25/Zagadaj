@@ -9,10 +9,11 @@ import { colors } from '../../src/theme';
 import { fonts } from '../../src/typography';
 
 const iconNames = {
-  index: ['home-outline', 'home'],
-  reels: ['play-circle-outline', 'play-circle'],
+  index: ['layers-outline', 'layers'],
+  progress: ['leaf-outline', 'leaf'],
+  spots: ['map-outline', 'map'],
+  learn: ['school-outline', 'school'],
   coach: ['chatbubble-ellipses-outline', 'chatbubble-ellipses'],
-  progress: ['stats-chart-outline', 'stats-chart'],
 } as const;
 
 const tabListeners = {
@@ -24,7 +25,7 @@ const tabListeners = {
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { hydrated, signedIn, onboarded } = useAuth();
-  const tabHeight = 54 + Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 4);
+  const tabHeight = 58 + Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 4);
 
   if (!hydrated) return null;
   if (!signedIn) return <Redirect href="/login" />;
@@ -33,7 +34,6 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={({ route }) => {
-        const dark = route.name === 'reels';
         const pair = iconNames[route.name as keyof typeof iconNames] ?? iconNames.index;
         return {
           headerShown: false,
@@ -41,13 +41,13 @@ export default function TabsLayout() {
           lazy: true,
           freezeOnBlur: false,
           tabBarHideOnKeyboard: true,
-          sceneStyle: { backgroundColor: dark ? colors.black : colors.bg },
-          tabBarActiveTintColor: colors.teal,
-          tabBarInactiveTintColor: dark ? '#A6ADB0' : '#111111',
-          tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 11, marginTop: 1 },
-          tabBarIconStyle: { marginTop: 3 },
+          sceneStyle: { backgroundColor: colors.bg },
+          tabBarActiveTintColor: colors.navy,
+          tabBarInactiveTintColor: '#8A857D',
+          tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 10, marginTop: 1 },
+          tabBarIconStyle: { marginTop: 4 },
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={pair[focused ? 1 : 0]} color={color} size={focused ? 26 : 25} />
+            <Ionicons name={pair[focused ? 1 : 0]} color={color} size={focused ? 25 : 24} />
           ),
           tabBarStyle: {
             position: 'absolute',
@@ -58,21 +58,23 @@ export default function TabsLayout() {
             paddingTop: 2,
             paddingBottom: Math.max(insets.bottom, 4),
             borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-            backgroundColor: dark ? 'rgba(8,9,9,0.96)' : 'rgba(255,255,255,0.98)',
+            borderTopColor: 'rgba(7,31,54,0.10)',
+            backgroundColor: 'rgba(246,240,228,0.98)',
             elevation: 0,
-            shadowColor: '#000',
-            shadowOpacity: dark ? 0 : 0.05,
+            shadowColor: '#071F36',
+            shadowOpacity: 0.06,
             shadowRadius: 14,
             shadowOffset: { width: 0, height: -3 },
           },
         };
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Dziś' }} listeners={tabListeners} />
-      <Tabs.Screen name="reels" options={{ title: 'Rolki' }} listeners={tabListeners} />
+      <Tabs.Screen name="index" options={{ title: 'Deck' }} listeners={tabListeners} />
+      <Tabs.Screen name="progress" options={{ title: 'Garden' }} listeners={tabListeners} />
+      <Tabs.Screen name="spots" options={{ title: 'Spoty' }} listeners={tabListeners} />
+      <Tabs.Screen name="learn" options={{ title: 'Learn' }} listeners={tabListeners} />
       <Tabs.Screen name="coach" options={{ title: 'Coach' }} listeners={tabListeners} />
-      <Tabs.Screen name="progress" options={{ title: 'Postęp' }} listeners={tabListeners} />
+      <Tabs.Screen name="reels" options={{ href: null }} />
     </Tabs>
   );
 }
