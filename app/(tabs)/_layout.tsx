@@ -38,7 +38,7 @@ export default function TabsLayout() {
         return {
           headerShown: false,
           animation: 'shift',
-          lazy: false,
+          lazy: true,
           freezeOnBlur: false,
           tabBarHideOnKeyboard: true,
           sceneStyle: { backgroundColor: dark ? colors.black : colors.bg },
