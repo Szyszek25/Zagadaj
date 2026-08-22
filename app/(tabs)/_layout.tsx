@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text } from 'react-native';
@@ -10,6 +11,12 @@ const icons: Record<string, string> = {
   reels: '▶',
   coach: '✦',
   progress: '▥',
+};
+
+const tabListeners = {
+  tabPress: () => {
+    void Haptics.selectionAsync().catch(() => {});
+  },
 };
 
 export default function TabsLayout() {
@@ -64,10 +71,10 @@ export default function TabsLayout() {
         };
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Dziś' }} />
-      <Tabs.Screen name="reels" options={{ title: 'Rolki' }} />
-      <Tabs.Screen name="coach" options={{ title: 'Coach' }} />
-      <Tabs.Screen name="progress" options={{ title: 'Postęp' }} />
+      <Tabs.Screen name="index" options={{ title: 'Dziś' }} listeners={tabListeners} />
+      <Tabs.Screen name="reels" options={{ title: 'Rolki' }} listeners={tabListeners} />
+      <Tabs.Screen name="coach" options={{ title: 'Coach' }} listeners={tabListeners} />
+      <Tabs.Screen name="progress" options={{ title: 'Postęp' }} listeners={tabListeners} />
     </Tabs>
   );
 }
