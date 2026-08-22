@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const read = (path: string) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const read = (path: string) => readFile(resolve(ROOT, path), 'utf8');
 
 test('project remains on Expo SDK 54 Snack-compatible stack', async () => {
   const pkg = JSON.parse(await read('package.json')) as { dependencies: Record<string, string>; scripts: Record<string, string> };
@@ -10,6 +13,7 @@ test('project remains on Expo SDK 54 Snack-compatible stack', async () => {
   assert.match(pkg.dependencies['expo-router'], /^~6\./);
   assert.ok(pkg.dependencies['expo-video']);
   assert.ok(pkg.dependencies['expo-image']);
+  assert.ok(pkg.dependencies['@react-navigation/native']);
   assert.ok(pkg.scripts.test);
   assert.ok(pkg.scripts.typecheck);
 });

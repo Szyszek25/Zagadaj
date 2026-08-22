@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
-import { useIsFocused } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useIsFocused } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 

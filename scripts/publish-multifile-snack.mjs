@@ -56,6 +56,7 @@ const snack = new Snack({
   dependencies: {
     '@expo/vector-icons': { version: '^15.0.3' },
     '@react-native-async-storage/async-storage': { version: '2.2.0' },
+    '@react-navigation/native': { version: '^7.1.8' },
     'expo-haptics': { version: '~15.0.8' },
     'expo-image': { version: '~3.0.11' },
     'expo-router': { version: '~6.0.24' },
