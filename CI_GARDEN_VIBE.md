@@ -1,0 +1,1 @@
+Validation marker for the Deck / Garden / Spoty / Learn / Coach product redesign.
