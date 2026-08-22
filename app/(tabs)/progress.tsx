@@ -7,12 +7,12 @@ import { ProgressScreen } from '../../src/screens/ProgressScreen';
 import { colors } from '../../src/theme';
 
 export default function ProgressRoute() {
-  const { xp, streak } = useZagadajSession();
+  const { xp, streak, challengeStarted } = useZagadajSession();
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <StatusBar style="dark" />
-      <ProgressScreen xp={xp} streak={streak} />
+      <ProgressScreen xp={xp} streak={streak} challengeStarted={challengeStarted} />
     </SafeAreaView>
   );
 }
