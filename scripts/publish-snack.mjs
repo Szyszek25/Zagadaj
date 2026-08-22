@@ -35,6 +35,14 @@ const snack = new Snack({
 });
 
 const result = await snack.saveAsync({ ignoreUser: true });
+const editorUrl = `https://snack.expo.dev/${result.id}`;
+
 console.log(`SNACK_RESULT=${JSON.stringify(result)}`);
 console.log(`EXPO_GO_URL=${result.url}`);
-console.log(`SNACK_EDITOR_URL=https://snack.expo.dev/${result.id}`);
+console.log(`SNACK_EDITOR_URL=${editorUrl}`);
+
+await fs.writeFile(
+  path.join(root, 'SNACK.md'),
+  `# Zagadaj — Expo Go\n\nPubliczny build uruchamiany w Expo Go.\n\n- Expo Go: ${result.url}\n- Snack: ${editorUrl}\n- SDK: 57.0.0\n`,
+  'utf8',
+);
