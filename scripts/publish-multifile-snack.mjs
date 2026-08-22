@@ -38,17 +38,17 @@ for (const file of projectFiles) {
 const snack = new Snack({
   name: 'Zagadaj — Expo Router',
   description: 'Wieloplikowy prototyp Zagadaj: Expo Router, tabs, safe area i pionowe rolki.',
-  sdkVersion: '57.0.0',
+  sdkVersion: '54.0.0',
   files,
   dependencies: {
     '@expo/vector-icons': { version: '^15.0.3' },
     '@react-native-async-storage/async-storage': { version: '2.2.0' },
-    'expo-haptics': { version: '~57.0.1' },
-    'expo-router': { version: '~57.0.13' },
-    'expo-splash-screen': { version: '~57.0.6' },
-    'expo-status-bar': { version: '~57.0.1' },
-    'react-native-safe-area-context': { version: '~5.7.0' },
-    'react-native-screens': { version: '~4.26.0' },
+    'expo-haptics': { version: '~15.0.8' },
+    'expo-router': { version: '~6.0.24' },
+    'expo-splash-screen': { version: '~31.0.13' },
+    'expo-status-bar': { version: '~3.0.9' },
+    'react-native-safe-area-context': { version: '~5.6.0' },
+    'react-native-screens': { version: '~4.16.0' },
   },
 });
 
