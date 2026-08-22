@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 const STORAGE_KEY = 'zagadaj:session:v1';
+const HYDRATION_TIMEOUT_MS = 800;
 
 type PersistedSession = {
   xp: number;
@@ -27,10 +28,20 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
 
   useEffect(() => {
     let alive = true;
+    let finished = false;
+
+    const finishHydration = () => {
+      if (!alive || finished) return;
+      finished = true;
+      didHydrateRef.current = true;
+      setHydrated(true);
+    };
+
+    const timeout = setTimeout(finishHydration, HYDRATION_TIMEOUT_MS);
 
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
-        if (!alive || !raw) return;
+        if (!alive || finished || !raw) return;
         const parsed = JSON.parse(raw) as Partial<PersistedSession>;
         if (typeof parsed.xp === 'number') setXp(parsed.xp);
         if (typeof parsed.streak === 'number') setStreak(parsed.streak);
@@ -40,13 +51,13 @@ export function ZagadajSessionProvider({ children }: { children: React.ReactNode
       })
       .catch(() => {})
       .finally(() => {
-        if (!alive) return;
-        didHydrateRef.current = true;
-        setHydrated(true);
+        clearTimeout(timeout);
+        finishHydration();
       });
 
     return () => {
       alive = false;
+      clearTimeout(timeout);
     };
   }, []);
 
