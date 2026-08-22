@@ -21,3 +21,5 @@ jobs:
         run: npx tsc --noEmit
       - name: Expo doctor
         run: npx expo-doctor
+      - name: Publish multi-file Snack
+        run: npm run snack:publish
