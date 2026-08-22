@@ -44,6 +44,7 @@ const snack = new Snack({
     '@react-native-async-storage/async-storage': { version: '2.2.0' },
     'expo-haptics': { version: '~57.0.1' },
     'expo-router': { version: '~57.0.13' },
+    'expo-splash-screen': { version: '~57.0.6' },
     'expo-status-bar': { version: '~57.0.1' },
     'react-native-safe-area-context': { version: '~5.7.0' },
     'react-native-screens': { version: '~4.26.0' },
